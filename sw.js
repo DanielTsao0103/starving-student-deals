@@ -1,6 +1,6 @@
 /* Account requests never enter CacheStorage. Each published build owns its shell. */
 const PREFIX = 'deals-shell-' + self.registration.scope + '-';
-const CACHE = PREFIX + '8d378ddba4b8473a9b87f71b5533c0f3';
+const CACHE = PREFIX + 'bfa662c0ed1949939242ab15baff1860';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./config.js", "./adapter.js", "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png", "./favicon.png"];
 const SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
 const shellURLs = new Set(SHELL.map(path => new URL(path, self.registration.scope).href));
@@ -30,6 +30,10 @@ self.addEventListener('fetch', event => {
     const cache = await caches.open(CACHE);
     const key = navigation ? new URL('./index.html', self.registration.scope).href : request;
     const saved = await cache.match(key);
+    if(navigation || url.pathname.endsWith('/index.html')){
+      const update=fetch(request).then(async response=>{if(response.ok)await cache.put(key,response.clone());return response;});
+      event.waitUntil(update.catch(()=>{}));return saved||update;
+    }
     if (saved) return saved;
     const response = await fetch(request);
     if (response.ok) await cache.put(key, response.clone());

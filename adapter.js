@@ -8,6 +8,7 @@ window.DealsWeb = (() => {
   const sdkURL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
   let initializing = configured, flushing = false, problem = '', memoryOnly = false, live = false;
+  let pendingAction=null, signinRequested=false, resendTimer=null, problemTimer=null;
   let syncRetryTimer, authSubscription, localUsage = {}, signInBusy = false;
   const inFlight = new Map();
   const clean = row => ({used: Math.min(99, Math.max(0, Number.isSafeInteger(row?.used) ? row.used : 0)), note: String(row?.note || '').slice(0, 500)});
@@ -27,18 +28,14 @@ window.DealsWeb = (() => {
   }
   function account() {
     if (!hooks) return;
-    const signInScreen = configured && !user;
-    $('about-title').textContent = signInScreen ? 'Sign in' : 'Your card';
-    $('account-title').hidden = signInScreen;
-    $('account-status').hidden = signInScreen && !problem;
-    for (const element of $('about-sheet').children) {
-      if (!element.matches('.handle,.utility-head,.account')) element.hidden = signInScreen;
-    }
-    $('about-sync').hidden = true; // Settings already shows the same status.
-    document.querySelector('.install-tip').hidden = signInScreen;
+    $('about-title').textContent = pendingAction ? 'Sign in to keep your uses' : 'Your card';
+    document.querySelector('.about-usage').hidden=true;
+    $('signin-title').textContent=pendingAction?'Sign in to keep your uses':'Sign in to sync';$('signin-title').hidden=Boolean(pendingAction);$('account-title').hidden=signinRequested;$('account-status').hidden=signinRequested;$('account-privacy').hidden=signinRequested;
+    $('signin-open').hidden=Boolean(user)||signinRequested;
+    $('account-privacy').textContent=user?"Only you see these uses. Another person's card, such as a spouse's, is tracked under their own sign-in.":"Your uses don't appear on other devices or anyone else's. Clearing browser data erases them.";
     const count = Object.keys(outbox).length;
-    const message = !configured ? 'Not syncing · Saved ' + (memoryOnly ? 'for this visit' : 'on this device') :
-      initializing ? 'Connecting to your account…' : !user ? (problem || 'Not syncing · Sign in to save your uses') :
+    const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
+      initializing ? 'Connecting to your account…' : !user ? (problem || 'Saved on this device only') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
       problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced across your devices' : 'Saved · Connecting live sync…');
@@ -47,21 +44,20 @@ window.DealsWeb = (() => {
     $('account-email').hidden = !user;
     $('account-email').textContent = user?.email || '';
     $('signout').hidden = !user;
-    $('signin-panel').hidden = !configured || Boolean(user);
+    $('signin-panel').hidden = !signinRequested || Boolean(user);
     $('signin-submit').disabled = initializing || signInBusy;
     $('sync-retry').hidden = !configured || !problem;
     const hasLocal = Object.values(localUsage).some(row => row.used || row.note);
     $('merge-panel').hidden = !user || !hasLocal || Boolean(read('deals-web-merge-decided', false));
   }
   function showAccount() { hooks.showAccount(); account(); }
-  function canWrite() {
+  function canWrite(action=null) {
     if (!configured || (user && !initializing)) return true;
-    showAccount();
-    if (!initializing) $('signin-email').focus();
+    pendingAction=action;signinRequested=true;showAccount();
     return false;
   }
   async function save(id, next) {
-    if (!canWrite()) return false;
+    if (!canWrite({kind:'note',id,note:next.note})) return false;
     next = clean(next);
     if (!configured) {
       rows[id] = next; localUsage = {...rows}; store(localKey, rows); emit(); return true;
@@ -137,10 +133,13 @@ window.DealsWeb = (() => {
         const ownEcho = JSON.stringify(clean(inFlight.get(id))) === JSON.stringify(clean(item)) && inFlight.has(id);
         const changed = old && JSON.stringify(clean(old)) !== JSON.stringify(clean(item));
         rows[id] = {...clean(item), updated_at: item.updated_at};
-        if (changed && !ownEcho) {
-          const notice = outbox[id] ? 'This offer changed on another device. Your queued change will sync next.' : 'Usage updated on another device.';
-          hooks.status(notice); problem = notice;
-        }
+        if (!ownEcho && outbox[id]) {
+          const queued=outbox[id];outbox[id]={...mergeUsage(item,queued),token:crypto.randomUUID()};
+          const offer=JSON.parse($('deals').textContent).offers.find(o=>o.id===id);
+          const remaining=offer?.limit===null?'No limit':Math.max(0,offer.limit-outbox[id].used)+' of '+offer.limit+' uses left';
+          problem='Merged with a change from another device · '+remaining;hooks.status(problem);
+          clearTimeout(problemTimer);problemTimer=setTimeout(()=>{problem='';hooks.status('');account();},6000);
+        } else if(changed&&!ownEcho) {problem='Usage updated on another device.';hooks.status(problem);clearTimeout(problemTimer);problemTimer=setTimeout(()=>{problem='';hooks.status('');account();},6000);}
         persist(); emit();
       }).subscribe(state => {
         if (generation !== epoch) return;
@@ -151,6 +150,7 @@ window.DealsWeb = (() => {
       });
     await refresh(generation);
     if (generation !== epoch) return;
+    const action=pendingAction;pendingAction=null;signinRequested=false;if(action){hooks.closeAccount();hooks.replay(action);}
     void flush();
     if (!$('merge-panel').hidden) showAccount();
   }
@@ -179,7 +179,7 @@ window.DealsWeb = (() => {
     event.preventDefault(); if (signInBusy) return;
     const email = $('signin-email').value.trim();
     signInBusy = true; $('signin-status').dataset.state = 'sending';
-    $('signin-status').textContent = 'Sending your sign-in link…';
+    $('signin-status').textContent = '';
     $('signin-submit').textContent = 'Sending…'; account();
     try {
       if (!client) await connect();
@@ -187,42 +187,42 @@ window.DealsWeb = (() => {
       const {error} = await client.auth.signInWithOtp({email, options: {emailRedirectTo: location.origin + location.pathname}});
       if (error) throw error;
       $('signin-status').dataset.state = 'sent';
-      $('signin-status').textContent = 'Check your email at ' + email + '. Open the link to sign in.';
-      $('signin-submit').textContent = 'Resend sign-in link';
+      $('signin-form').hidden=true;$('signin-sent').hidden=false;
+      $('sent-message').textContent='We sent a sign-in link to '+email+". Open it on this device. Check spam if it hasn't arrived in a minute.";
+      let seconds=30;$('resend').disabled=true;$('resend').textContent='Resend in 30s';clearInterval(resendTimer);resendTimer=setInterval(()=>{seconds--;$('resend').textContent=seconds?'Resend in '+seconds+'s':'Resend';if(!seconds){clearInterval(resendTimer);$('resend').disabled=false;}},1000);
+      $('signin-submit').textContent='Email me a sign-in link';
     } catch {
       $('signin-status').dataset.state = 'error';
       $('signin-status').textContent = 'Couldn’t send the link. Check your connection and email, then try again.';
       $('signin-submit').textContent = 'Try again';
     } finally { signInBusy = false; account(); }
   }
+  function mergeUsage(a,b){return clean({used:Math.max(a.used||0,b.used||0),note:[...new Set([a.note,b.note].flatMap(n=>(n||'').split('\n')).filter(Boolean))].join('\n')});}
   async function mergeLocal(keep) {
     if (!user) return;
     if (keep) {
       for (const [id, local] of Object.entries(localUsage)) {
         const remote = outbox[id] || rows[id] || {};
-        const note = [remote.note, local.note].filter((v, i, all) => v && all.indexOf(v) === i).join('\n').slice(0, 500);
-        outbox[id] = {...clean({used: Math.max(local.used || 0, remote.used || 0), note}), token: crypto.randomUUID()};
+        outbox[id] = {...mergeUsage(remote,local), token: crypto.randomUUID()};
       }
       persist(); emit();
     }
     store('deals-web-merge-decided', true); account(); void flush();
   }
   function setupLocation() {
-    const group = document.createElement('div'); group.className = 'location-controls';
-    $('pick-area').before(group); group.append($('pick-area'));
-    const button = document.createElement('button'); button.id = 'use-location'; button.className = 'text-button';
-    button.textContent = 'Use my location'; group.append(button);
-    const message = document.createElement('p'); message.id = 'gps-status'; message.role = 'status'; message.hidden = true;
-    $('recommend-controls').after(message);
+    const button=document.createElement('button');button.id='use-location';button.className='city-option location-controls';
+    button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7 18-3-8-8-3Z"/></svg><span>Use my location</span>';
+    $('quick-cities').before(button);
+    const message=document.createElement('p');message.id='gps-status';message.role='status';message.hidden=true;button.after(message);
     button.onclick = () => {
       message.hidden = false;
-      if (!navigator.geolocation) { message.textContent = 'Location is unavailable. Pick your area instead.'; return; }
+      if (!navigator.geolocation) { message.textContent = 'Location is unavailable. Choose a city instead.'; return; }
       button.disabled = true; message.textContent = 'Finding your location…';
       navigator.geolocation.getCurrentPosition(position => {
         button.disabled = false; message.hidden = true;
         hooks.onLocation({lat: position.coords.latitude, lng: position.coords.longitude});
       }, () => {
-        button.disabled = false; message.textContent = 'Location isn’t available. Pick your area instead.';
+        button.disabled = false; message.textContent = 'Location isn’t available. Choose a city instead.';
       }, {timeout: 10000, maximumAge: 60000, enableHighAccuracy: false});
     };
   }
@@ -230,6 +230,14 @@ window.DealsWeb = (() => {
     hooks = callbacks; localUsage = read(localKey);
     if (!configured) rows = {...localUsage};
     $('signin-form').onsubmit = sendLink;
+    $('signin-open').onclick=()=>{signinRequested=true;account();};
+    $('signin-cancel').onclick=()=>{pendingAction=null;signinRequested=false;account();hooks.closeAccount();};
+    $('different-email').onclick=()=>{$('signin-form').hidden=false;$('signin-sent').hidden=true;$('signin-status').textContent='';$('signin-email').focus();};
+    $('resend').onclick=sendLink;
+    const install=document.createElement('details');install.className='install-row';install.innerHTML='<summary>Install</summary><p>On iPhone, use Safari’s Share menu, then Add to Home Screen. On a laptop, use your browser’s install button.</p>';
+    install.hidden=matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;document.querySelector('.about-lines').after(install);
+    if(!install.hidden&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&/Safari/.test(navigator.userAgent)&&!read('deals-install-dismissed',false)){const hint=document.createElement('div');hint.className='install-hint';hint.append(document.createTextNode('Add to Home Screen from Share for offline use'));const close=document.createElement('button');close.className='text-button';close.textContent='Dismiss';close.onclick=()=>{store('deals-install-dismissed',true);hint.remove();};hint.append(close);$('results').before(hint);}
+
     $('merge-keep').onclick = () => void mergeLocal(true);
     $('merge-skip').onclick = () => void mergeLocal(false);
     $('sync-retry').onclick = () => { problem = ''; if (!client || !user) void connect(); else void refresh().then(flush); };
@@ -248,7 +256,7 @@ window.DealsWeb = (() => {
     addEventListener('storage', event => {
       if (!configured && event.key === localKey) { rows = read(localKey); localUsage = {...rows}; emit(); }
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='activated'&&navigator.serviceWorker.controller){const toast=document.createElement('div');toast.className='list-toast show';toast.textContent='Updated. Reopen for the latest.';document.body.append(toast);setTimeout(()=>toast.remove(),6500);}});});}).catch(() => {
       $('account-status').textContent = 'Offline setup unavailable. Reload when connected.';
     });
   }
