@@ -9,13 +9,19 @@ window.DealsWeb = (() => {
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
   let loadingUsage = false;
   let initializing = configured, flushing = false, problem = '', memoryOnly = false, live = false;
-  let pendingAction=null, signinRequested=false, resendTimer=null, problemTimer=null;
+  let pendingAction=null, signinRequested=false, resendTimer=null;
+  let authMode='create', authStep='email', authAttempt=null, verifyBusy=false, resendAt=0;
+  let welcome='', onboarding=false, newAccount=false, mergePending=false, mergeReceipt=null;
+  let signOutBusy=false;
+  const offers=new Map(JSON.parse($('deals').textContent).offers.map(o=>[o.id,o]));
+  const setText=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
+  const plural=(count,word)=>count+' '+word+(count===1?'':'s');
   let syncRetryTimer, authSubscription, localUsage = {}, signInBusy = false;
   const inFlight = new Map(), remoteNotices=new Map(), collisions=new Set();
   const limits=new Map(JSON.parse($('deals').textContent).offers.map(o=>[o.id,o.limit]));
-  const clamp=(id,n)=>Math.min(limits.get(id)??99,Math.max(0,n));
+  const clamp=(id,n)=>Math.min(limits.get(id)??Number.MAX_SAFE_INTEGER,Math.max(0,n));
   function optimistic(id,item){return {used:clamp(id,(rows[id]?.used||0)+(item.deltas||[]).reduce((sum,d)=>sum+d.delta,0)),note:item.note??rows[id]?.note??''};}
-  const clean = row => ({used: Math.min(99, Math.max(0, Number.isSafeInteger(row?.used) ? row.used : 0)), note: String(row?.note || '').slice(0, 500)});
+  const clean = row => ({used: Math.max(0, Number.isSafeInteger(row?.used) ? row.used : 0), note: String(row?.note || '').slice(0, 500)});
   function read(key, fallback = {}) {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
   }
@@ -24,7 +30,73 @@ window.DealsWeb = (() => {
     catch { memoryOnly = true; return false; }
   }
   function accountKey(id = user?.id) { return 'deals-web-account-v1:' + id; }
-  function persist() { if (user) store(accountKey(), {rows, outbox}); }
+  function persist() { return user ? store(accountKey(), {rows, outbox, mergeReceipt}) : false; }
+  function remove(key) { try { localStorage.removeItem(key); } catch { memoryOnly=true; } }
+  function knownEmail() { try { return localStorage.getItem('deals-known-email') || ''; } catch { return ''; } }
+  function rememberEmail(email) { try { localStorage.setItem('deals-known-email',email); } catch { memoryOnly=true; } }
+  function localFingerprint() { return JSON.stringify(Object.entries(localUsage).sort(([a],[b])=>a.localeCompare(b))); }
+  function differences() {
+    return Object.entries(localUsage).filter(([id])=>offers.has(id)).map(([id,local])=>{
+      const remote=outbox[id]?optimistic(id,outbox[id]):clean(rows[id]);
+      return {id,local:clean(local),remote,delta:Math.max(0,clamp(id,local.used||0)-remote.used),
+        note:local.note && !remote.note.split('\n').includes(local.note) ? local.note : ''};
+    }).filter(item=>item.delta||item.note);
+  }
+  function renderMerge() {
+    const changes=differences(),count=changes.reduce((n,item)=>n+item.delta,0);
+    setText('merge-title',newAccount?'Add your device uses?':'Choose which uses to keep');
+    setText('merge-message',newAccount?'Add the '+plural(count,'use')+' you marked on this device to your new account?':
+      'This device has '+plural(count,'use')+" your account doesn’t."+(changes.some(item=>item.note)?' It also has different notes.':''));
+    setText('merge-keep',newAccount?'Add':'Keep both');setText('merge-skip',newAccount?'Start fresh':'Use account only');
+    const list=$('merge-differences');list.replaceChildren();
+    for(const item of changes){
+      const li=document.createElement('li'),title=document.createElement('strong'),detail=document.createElement('span');
+      title.textContent=offers.get(item.id).business;
+      detail.textContent=offers.get(item.id).offer+' · Device: '+item.local.used+'; account: '+item.remote.used+
+        (item.delta?' · Add '+item.delta:'')+(item.note?' · Different note':'');
+      li.append(title,detail);list.append(li);
+    }
+  }
+  function renderAuth() {
+    const busy=signInBusy||verifyBusy;
+    $('signin-form').hidden=authStep!=='email';$('signin-sent').hidden=authStep!=='code';
+    $('signin-title').hidden=authStep==='code';$('signin-intro').hidden=authStep==='code';
+    document.querySelector('.auth-modes').hidden=authStep==='code';
+    for(const mode of ['signin','create']){
+      $('auth-'+mode).setAttribute('aria-pressed',String(authMode===mode));$('auth-'+mode).disabled=busy;
+    }
+    setText('signin-title',authMode==='signin'?'Welcome back':'Track your card on all your devices');
+    setText('signin-submit',signInBusy?'Sending…':authMode==='signin'?'Email me a code':'Create account');
+    $('signin-submit').disabled=initializing||busy;
+    $('signin-email').readOnly=busy;$('signin-code').readOnly=busy;
+    $('code-submit').disabled=busy;setText('code-submit',verifyBusy?'Verifying…':'Verify code');
+    $('different-email').disabled=busy;$('unknown-create').disabled=busy;
+    updateCountdown();
+  }
+  function updateCountdown() {
+    const seconds=Math.max(0,Math.ceil((resendAt-Date.now())/1000));
+    $('resend').disabled=seconds>0||signInBusy||verifyBusy;
+    setText('resend',seconds?'Resend code in '+seconds+'s':'Resend code');
+    if(!seconds){clearInterval(resendTimer);resendTimer=null;}
+  }
+  function cooldown(seconds=60) {
+    resendAt=Date.now()+seconds*1000;clearInterval(resendTimer);
+    resendTimer=setInterval(updateCountdown,1000);updateCountdown();
+  }
+  function authError(message) {
+    $('signin-status').dataset.state=message?'error':'';setText('signin-status',message);
+    $('signin-code').setAttribute('aria-invalid',String(Boolean(message)&&authStep==='code'));
+  }
+  function chooseMode(mode) {
+    if(signInBusy||verifyBusy)return;
+    authMode=mode;authStep='email';authAttempt=null;remove('deals-auth-attempt');
+    $('unknown-create').hidden=true;authError('');renderAuth();
+  }
+  function openSignin() {
+    signinRequested=true;welcome='';authMode=knownEmail()?'signin':'create';
+    if(authStep==='email')$('signin-email').value=knownEmail();
+    account();
+  }
   function emit() {
     const next = {...rows};
     for (const [id, item] of Object.entries(outbox)) next[id] = optimistic(id,item);
@@ -33,33 +105,36 @@ window.DealsWeb = (() => {
   function account() {
     if (!hooks) return;
     hooks.onLoading(initializing || loadingUsage);
-    $('about-title').textContent = 'Your card';$('about-title').hidden=signinRequested;
+    const authenticating=signinRequested&&!user,focused=authenticating||mergePending||Boolean(welcome);
+    setText('about-title',focused?'Account':'Your card');$('about-title').hidden=false;
+    $('about-sheet').classList.toggle('account-focused',focused);
     document.querySelector('.about-usage').hidden=true;
-    $('signin-title').textContent=pendingAction?'Sign in to keep your uses':'Sign in to sync';$('signin-title').hidden=!$('signin-sent').hidden;$('signin-intro').hidden=!$('signin-sent').hidden;$('account-title').hidden=signinRequested;$('account-status').hidden=signinRequested;$('account-privacy').hidden=signinRequested;
-    $('signin-open').hidden=Boolean(user)||signinRequested;
-    $('account-privacy').textContent=user?"Only you see these uses. Another person's card, such as a spouse's, is tracked under their own sign-in.":"Sign in with your own email to keep uses on all your devices. Each person uses their own email, so counts stay separate.";
+    $('account-title').hidden=focused;$('account-status').hidden=authenticating;
+    $('account-privacy').hidden=authenticating;
+    $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
+    setText('account-privacy',user?'Your uses are private to you.':'Each person uses their own email and has a separate card.');
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.note!==undefined?1:0),0);
     const indicator=$('header-sync');const hidden=!configured||(!user&&navigator.onLine)||navigator.onLine&&!count&&!flushing,label=!navigator.onLine?'Offline':flushing?'Syncing…':count+' waiting';if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
     const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
       initializing ? 'Connecting to your account…' : !user ? (problem || 'Saved on this device only') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
-      problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced across your devices' : 'Saved · Connecting live sync…');
+      problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
     $('account-status').textContent = message;
     $('about-sync').textContent = message;
     $('account-email').hidden = !user;
-    $('account-email').textContent = user?.email || '';
+    setText('account-email',user?'Signed in as '+user.email:'');
     $('signout').hidden = !user;
     $('signin-panel').hidden = !signinRequested || Boolean(user);
-    $('signin-submit').disabled = initializing || signInBusy;
+    $('signout-help').hidden=!user;renderAuth();
+    $('auth-success').hidden=!welcome||mergePending;setText('auth-welcome',welcome);
     $('sync-retry').hidden = !configured || !problem;
-    const hasLocal = Object.values(localUsage).some(row => row.used || row.note);
-    $('merge-panel').hidden = !user || !hasLocal || Boolean(read('deals-web-merge-decided', false));
+    $('merge-panel').hidden=!user||!mergePending;
   }
   function showAccount() { hooks.showAccount(); account(); }
   function canWrite(action=null) {
-    if (!configured || (user && !initializing)) return true;
-    pendingAction=action;signinRequested=true;showAccount();
+    if (!configured || (user && !initializing && !loadingUsage && !mergePending && !onboarding && !signOutBusy)) return true;
+    pendingAction=action;if(!user)openSignin();showAccount();
     return false;
   }
   async function save(id, next) {
@@ -77,7 +152,7 @@ window.DealsWeb = (() => {
     persist(); emit(); void flush(); return true;
   }
   async function flush() {
-    if (!user || !client || initializing || flushing || !navigator.onLine) return;
+    if (!user || !client || initializing || loadingUsage || flushing || signOutBusy || !navigator.onLine) return;
     flushing = true;
     const generation = epoch, owner = user.id;
     clearTimeout(syncRetryTimer);
@@ -89,13 +164,9 @@ window.DealsWeb = (() => {
         inFlight.set(id,{used:expected,note:rows[id]?.note||''});
         let result;
         if(action){
-          result=await client.rpc('bump_usage',{p_offer:id,p_delta:action.delta,p_limit:limits.get(id)??null});
-          if(result.error&&(result.error.code==='PGRST202'||result.error.code==='42883'||/function.*not found|could not find.*function/i.test(result.error.message||''))){
-            // Compatibility until the separately reviewed RPC migration is deployed.
-            const fresh=await client.from('usage').select('*').eq('user_id',owner).eq('offer_id',id).maybeSingle();
-            if(fresh.error)throw fresh.error;
-            result=await client.from('usage').upsert({user_id:owner,offer_id:id,used:clamp(id,(fresh.data?.used||0)+action.delta),note:fresh.data?.note||''},{onConflict:'user_id,offer_id'}).select().single();
-          }
+          // A persisted operation ID survives retries and reloads. Never fall back
+          // to read/overwrite: that would lose concurrent uses or apply a retry twice.
+          result=await client.rpc('bump_usage',{p_offer_id:id,p_delta:action.delta,p_op_id:action.token});
         }else{
           result=await client.from('usage').upsert({user_id:owner,offer_id:id,note:item.note??rows[id]?.note??''},{onConflict:'user_id,offer_id'}).select().single();
         }
@@ -133,18 +204,31 @@ window.DealsWeb = (() => {
           rows[item.offer_id] = {...clean(item), updated_at: item.updated_at};
       }
       loadingUsage = false; problem = ''; persist(); emit();
+      if(onboarding)finishSignin();
     } catch { if (generation === epoch) { loadingUsage = false; problem = 'Couldn’t refresh your uses. Retry when connected.'; account(); } }
   }
   async function sessionChanged(session) {
     const nextUser = session?.user || null;
     if (!initializing && nextUser?.id === user?.id) { account(); void flush(); void refreshSettings(); return; }
+    const previousUser=user;
     const generation = ++epoch;
+    if(previousUser && previousUser.id!==nextUser?.id){
+      remove(accountKey(previousUser.id));remove('deals-web-settings-v1:'+previousUser.id);
+      localUsage={};remove(localKey);welcome='';mergePending=false;onboarding=false;pendingAction=null;
+      remoteNotices.clear();collisions.clear();
+    }
     clearTimeout(syncRetryTimer);clearTimeout(settingsRetryTimer);hooks.onReset();
     if (channel) { void client.removeChannel(channel); channel = null; }
     user = nextUser; settingsFlushing=false;settingsReady=false;const settingsCache=user?read(settingsKey()):{};settings=settingsCache.settings||{};settingsPending=settingsCache.pending||{};hooks.onSettings(user?{...settings,...settingsPending}:null);flushing = false; inFlight.clear(); live = false; problem = '';
     const cached = user ? read(accountKey()) : {};
-    rows = cached.rows || {}; outbox = cached.outbox || {};
-    loadingUsage = Boolean(user && !cached.rows && navigator.onLine);
+    rows = cached.rows || {}; outbox = cached.outbox || {};mergeReceipt=cached.mergeReceipt||null;
+    if(user){
+      authAttempt ||= read('deals-auth-attempt',null);
+      onboarding=Boolean(authAttempt?.email===user.email)||differences().length>0;
+      if(mergeReceipt===localFingerprint()){localUsage={};remove(localKey);}
+      rememberEmail(user.email);signinRequested=false;
+    }else{authMode=knownEmail()?'signin':'create';$('signin-email').value=knownEmail();}
+    loadingUsage = Boolean(user && navigator.onLine);
     for(const [id,item] of Object.entries(outbox))if(!item.deltas)outbox[id]={deltas:item.used===(rows[id]?.used||0)?[]:[{delta:item.used-(rows[id]?.used||0),token:crypto.randomUUID()}],note:item.note,token:crypto.randomUUID()};
     initializing = false; emit();
     if (!user) return;
@@ -170,9 +254,7 @@ window.DealsWeb = (() => {
       });
     await refresh(generation);
     if (generation !== epoch) return;
-    const action=pendingAction;pendingAction=null;signinRequested=false;if(action){hooks.closeAccount();hooks.replay(action);}
     void flush();
-    if (!$('merge-panel').hidden) showAccount();
   }
   async function connect() {
     if (!configured) return;
@@ -195,39 +277,102 @@ window.DealsWeb = (() => {
       initializing = false; problem = 'Sign-in is unavailable right now. You can still browse.'; account();
     }
   }
-  async function sendLink(event) {
-    event.preventDefault(); if (signInBusy) return;
-    const email = $('signin-email').value.trim();
-    signInBusy = true; $('signin-status').dataset.state = 'sending';
-    $('signin-status').textContent = '';
-    $('signin-submit').textContent = 'Sending…'; account();
+  /** Request a code in the chosen mode; resends retain the first request time. */
+  async function sendCode(event) {
+    event?.preventDefault();if(signInBusy||verifyBusy)return;
+    if(authStep==='code'&&Date.now()<resendAt)return;
+    if(!$('signin-form').reportValidity())return;
+    const email=$('signin-email').value.trim().toLowerCase();
+    const startedAt=authAttempt?.email===email?authAttempt.startedAt:Date.now();
+    signInBusy=true;authError('');$('unknown-create').hidden=true;renderAuth();
     try {
-      if (!client) await connect();
-      if (!client) throw new Error('Unavailable');
-      const {error} = await client.auth.signInWithOtp({email, options: {emailRedirectTo: location.origin + location.pathname}});
-      if (error) throw error;
-      $('signin-status').dataset.state = 'sent';
-      $('signin-form').hidden=true;$('signin-sent').hidden=false;
-      $('sent-message').textContent='We sent a sign-in link to '+email+". Open it on this device. Check spam if it hasn't arrived in a minute.";
-      let seconds=30;$('resend').disabled=true;$('resend').setAttribute('aria-disabled','true');$('resend').textContent='Resend in 30s';clearInterval(resendTimer);resendTimer=setInterval(()=>{seconds--;$('resend').textContent=seconds?'Resend in '+seconds+'s':'Resend';if(!seconds){clearInterval(resendTimer);$('resend').disabled=false;$('resend').setAttribute('aria-disabled','false');}},1000);
-      $('signin-submit').textContent='Email me a sign-in link';
-    } catch {
-      $('signin-status').dataset.state = 'error';
-      $('signin-status').textContent = 'Couldn’t send the link. Check your connection and email, then try again.';
-      $('signin-submit').textContent = 'Try again';
-    } finally { signInBusy = false; account(); }
+      if(!client)await connect();
+      if(!client)throw new Error('Unavailable');
+      const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:authMode==='create',
+        emailRedirectTo:location.origin+location.pathname}});
+      if(error)throw error;
+      authAttempt={email,mode:authMode,startedAt,sentAt:Date.now()};store('deals-auth-attempt',authAttempt);
+      authStep='code';$('signin-code').value='';paintCode();
+      setText('sent-message','Enter the 6-digit code sent to '+email);
+      cooldown();renderAuth();$('signin-code').focus();
+    }catch(error){
+      if(authMode==='signin'&&(error.code==='otp_disabled'||error.code==='user_not_found'||/signups? (?:not allowed|disabled)|user not found/i.test(error.message||''))){
+        authError("There's no account for "+email+' yet.');$('unknown-create').hidden=false;
+      }else authError(authErrorMessage(error,false));
+    }finally{signInBusy=false;account();}
   }
-  function mergeUsage(a,b){return clean({used:(a.used||0)+(b.used||0),note:[...new Set([a.note,b.note].flatMap(n=>(n||'').split('\n')).filter(Boolean))].join('\n')});}
-  async function mergeLocal(keep) {
-    if (!user) return;
-    if (keep) {
-      for (const [id, local] of Object.entries(localUsage)) {
-        const remote = outbox[id] || rows[id] || {};
-        outbox[id] = {deltas:[...(outbox[id]?.deltas||[]),...(local.used?[{delta:local.used,token:crypto.randomUUID()}]:[])],note:mergeUsage(remote,local).note,token:crypto.randomUUID()};
-      }
-      persist(); emit();
+  function authErrorMessage(error,verifying) {
+    const message=error.message||'',code=error.code||'';
+    if(error.status===429||/rate_limit|over_email_send|over_request/.test(code)||/rate limit|too many|after .*seconds/i.test(message)){
+      const seconds=Number(error.retryAfter)||Number(message.match(/after (\d+) seconds/i)?.[1]);
+      if(seconds)cooldown(Math.max(seconds,60));
+      return 'Too many emails right now. '+(seconds?'Try again in '+plural(seconds,'second')+'.':'Try again in a few minutes.');
     }
-    store('deals-web-merge-decided', true); account(); void flush();
+    // GoTrue can use one error for both invalid and expired tokens. Use the
+    // known delivery time only to disambiguate that combined response.
+    const ambiguous=/expired.*invalid|invalid.*expired/i.test(message);
+    const expired=ambiguous?Date.now()-(authAttempt?.sentAt||0)>=600000:code==='otp_expired'||/expired/i.test(message);
+    if(verifying&&expired)return 'That code expired. Send a new one.';
+    if(verifying&&ambiguous)return "That code isn't right. Check the newest email.";
+    if(verifying&&(error.status===400||error.status===403||/invalid|wrong/.test(code)))return "That code isn't right. Check the newest email.";
+    return verifying?'Couldn’t verify the code. Check your connection and try again.':'Couldn’t send the code. Check your connection and email, then try again.';
+  }
+  function paintCode() {
+    const input=$('signin-code'),digits=input.value.replace(/\D/g,'').slice(0,6);input.value=digits;
+    document.querySelectorAll('.code-boxes span').forEach((box,index)=>{
+      box.textContent=digits[index]||'';box.classList.toggle('current',index===Math.min(digits.length,5));
+    });
+  }
+  async function verifyCode(event) {
+    event?.preventDefault();if(verifyBusy||signInBusy||!authAttempt||!/^\d{6}$/.test($('signin-code').value))return;
+    verifyBusy=true;authError('');renderAuth();
+    try {
+      const {data,error}=await client.auth.verifyOtp({email:authAttempt.email,token:$('signin-code').value,type:'email'});
+      if(error)throw error;
+      if(!data.session)throw new Error('Missing session');
+      clearInterval(resendTimer);await sessionChanged(data.session);
+    }catch(error){
+      authError(authErrorMessage(error,true));
+      if(!matchMedia('(prefers-reduced-motion:reduce)').matches)document.querySelector('.code-field').animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(-3px)'},{transform:'translateX(0)'}],{duration:220});
+      $('signin-code').focus();$('signin-code').select();
+    }finally{verifyBusy=false;account();}
+  }
+  function finishSignin() {
+    if(!user||loadingUsage)return;
+    onboarding=false;
+    newAccount=authAttempt?.mode==='create'&&Date.parse(user.created_at)>=authAttempt.startedAt-1000;
+    const hasAttempt=Boolean(authAttempt),already=authAttempt?.mode==='create'&&!newAccount;
+    mergePending=differences().length>0;
+    const used=Object.values(rows).reduce((n,row)=>n+row.used,0),deals=Object.values(rows).filter(row=>row.used>0).length;
+    welcome=newAccount?"You're all set. Uses you mark now sync to your other devices.":
+      already?'Welcome back. You already had an account, so your card is synced.':
+      'Welcome back. Your card is synced: '+plural(used,'use')+' on '+plural(deals,'deal')+'.';
+    authAttempt=null;remove('deals-auth-attempt');authStep='email';$('signin-code').value='';paintCode();
+    clearInterval(resendTimer);resendAt=0;
+    if(mergePending)renderMerge();
+    if(hasAttempt||mergePending){showAccount();$('about-title').focus({preventScroll:true});}else{welcome='';account();}
+  }
+  /** Commit receipt + outbox together before consuming the anonymous device cache. */
+  async function mergeLocal(keep) {
+    if(!user||!mergePending)return;
+    const fingerprint=localFingerprint();
+    if(keep&&mergeReceipt!==fingerprint){
+      for(const item of differences()){
+        const queued=outbox[item.id]||{deltas:[]};
+        if(item.delta)queued.deltas.push({delta:item.delta,token:crypto.randomUUID()});
+        if(item.note)queued.note=[...new Set([item.remote.note,item.note].filter(Boolean))].join('\n').slice(0,500);
+        outbox[item.id]={...queued,token:crypto.randomUUID()};
+      }
+    }
+    mergeReceipt=fingerprint;persist();localUsage={};remove(localKey);mergePending=false;
+    welcome=keep?'Your device uses were added. They sync when connected.':'Your account’s uses are ready on this device.';
+    emit();void flush();
+  }
+  function continueAfterSignin() {
+    if(mergePending)return;
+    const action=pendingAction;pendingAction=null;welcome='';account();hooks.closeAccount();
+    if(action)hooks.replay(action);
   }
   // Settings use a separate, account-scoped outbox; coordinates are never accepted.
   let settings = {}, settingsPending = {}, settingsFlushing = false, settingsReady = false;
@@ -282,12 +427,21 @@ window.DealsWeb = (() => {
   function init(callbacks) {
     hooks = callbacks;const indicator=document.createElement('span');indicator.id='header-sync';indicator.className='header-sync';indicator.hidden=true;$('about-button').after(indicator);localUsage = read(localKey);
     if (!configured) rows = {...localUsage};
-    $('signin-form').onsubmit = sendLink;
-    $('signin-open').onclick=()=>{signinRequested=true;account();};
+    authMode=knownEmail()?'signin':'create';$('signin-email').value=knownEmail();
+    $('signin-form').onsubmit=sendCode;$('code-form').onsubmit=verifyCode;
+    $('signin-code').oninput=()=>{paintCode();authError('');if($('signin-code').value.length===6)void verifyCode();};
+    $('signin-code').onpaste=event=>{
+      const digits=event.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+      if(digits){event.preventDefault();$('signin-code').value=digits;paintCode();authError('');if(digits.length===6)void verifyCode();}
+    };
+    $('auth-signin').onclick=()=>chooseMode('signin');$('auth-create').onclick=()=>chooseMode('create');
+    $('unknown-create').onclick=()=>{chooseMode('create');void sendCode();};
+    $('auth-continue').onclick=continueAfterSignin;
+    $('signin-open').onclick=openSignin;
     $('signin-cancel').onclick=()=>{pendingAction=null;signinRequested=false;account();hooks.closeAccount();};
-    $('different-email').onclick=()=>{$('signin-form').hidden=false;$('signin-sent').hidden=true;$('signin-status').textContent='';account();$('signin-email').focus();};
-    $('resend').onclick=sendLink;
-    const install=document.createElement('div');install.className='install-row';install.innerHTML='<button class="summary-row" aria-expanded="false">Add to Home Screen <svg viewBox="0 0 24 24" aria-hidden="true" class="install-chevron icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button><p hidden>On iPhone, use Safari’s Share menu, then Add to Home Screen. On a laptop, use your browser’s install button.</p>';install.querySelector('button').onclick=()=>{const button=install.querySelector('button'),open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));install.querySelector('p').hidden=!open;};
+    $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus();};
+    $('resend').onclick=sendCode;
+    const install=document.createElement('div');install.className='install-row';install.innerHTML='<button class="summary-row" aria-expanded="false">Add to Home Screen <svg viewBox="0 0 24 24" aria-hidden="true" class="install-chevron icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button><p hidden>On iPhone, use Safari’s Share menu, then Add to Home Screen. You’ll sign in once inside the app. On a laptop, use your browser’s install button.</p>';install.querySelector('button').onclick=()=>{const button=install.querySelector('button'),open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));install.querySelector('p').hidden=!open;};
     install.hidden=matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;document.querySelector('.about-lines').after(install);
     if(!install.hidden&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&/Safari/.test(navigator.userAgent)&&!read('deals-install-dismissed',false)){const hint=document.createElement('div');hint.className='install-hint';hint.append(document.createTextNode('Add to Home Screen from Share for offline use'));const close=document.createElement('button');close.className='text-button';close.textContent='Dismiss';close.onclick=()=>{store('deals-install-dismissed',true);hint.remove();};hint.append(close);$('results').before(hint);}
 
@@ -295,13 +449,13 @@ window.DealsWeb = (() => {
     $('merge-skip').onclick = () => void mergeLocal(false);
     $('sync-retry').onclick = () => { problem = ''; if (!client || !user) void connect(); else void refresh().then(flush); };
     $('signout').onclick = async () => {
-      $('signout').disabled = true;
+      $('signout').disabled = true;signOutBusy=true;
       try {
         const {error} = await client.auth.signOut({scope: 'local'});
         if (error) throw error;
         await sessionChanged(null);
       } catch { problem = 'Couldn’t sign out. Please try again.'; account(); }
-      finally { $('signout').disabled = false; }
+      finally { signOutBusy=false;$('signout').disabled = false;account(); }
     };
     emit(); void connect();
     addEventListener('online', () => { account(); if (user) {void refresh().then(flush);void refreshSettings();} else if (configured) void connect(); });
