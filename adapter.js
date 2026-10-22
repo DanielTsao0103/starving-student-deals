@@ -39,7 +39,7 @@ window.DealsWeb = (() => {
     $('signin-open').hidden=Boolean(user)||signinRequested;
     $('account-privacy').textContent=user?"Only you see these uses. Another person's card, such as a spouse's, is tracked under their own sign-in.":"Sign in with your own email to keep uses on all your devices. Each person uses their own email, so counts stay separate.";
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.note!==undefined?1:0),0);
-    const indicator=$('header-sync');indicator.hidden=!configured||(!user&&navigator.onLine)||navigator.onLine&&!count&&!flushing;indicator.textContent=!navigator.onLine?'Offline':flushing?'Syncing…':count+' waiting';
+    const indicator=$('header-sync');const hidden=!configured||(!user&&navigator.onLine)||navigator.onLine&&!count&&!flushing,label=!navigator.onLine?'Offline':flushing?'Syncing…':count+' waiting';if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
     const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
       initializing ? 'Connecting to your account…' : !user ? (problem || 'Saved on this device only') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
