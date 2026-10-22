@@ -7,7 +7,7 @@ window.DealsWeb = (() => {
   const localKey = 'deals-web-local-v1';
   const sdkURL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
-  let loadingUsage = false;
+  let loadingUsage = false, lastSynced=0;
   let retryDelay=15000;
   let initializing = configured, flushing = false, problem = '', memoryOnly = false, live = false;
   let pendingAction=null, signinRequested=false, resendTimer=null;
@@ -46,9 +46,9 @@ window.DealsWeb = (() => {
   function renderMerge() {
     const changes=differences(),count=changes.reduce((n,item)=>n+item.delta,0);
     setText('merge-title',newAccount?'Add your device uses?':'Choose which uses to keep');
-    setText('merge-message',newAccount?'Add the '+plural(count,'use')+' you marked on this device to your new account?':
-      'This device has '+plural(count,'use')+" your account doesn’t.");
-    setText('merge-keep',newAccount?'Add':'Keep both');setText('merge-skip',"Don't add this device's uses");
+    const remote=Object.values(rows),uses=remote.reduce((n,row)=>n+row.used,0),deals=remote.filter(row=>row.used>0).length;
+    setText('merge-message','Your account has '+plural(uses,'use')+' on '+plural(deals,'deal')+'. This device has '+count+' more.');
+    setText('merge-keep',newAccount?'Add':'Keep both');setText('merge-skip',"Discard this device's uses");
     const list=$('merge-differences');list.replaceChildren();
     for(const item of changes){
       const li=document.createElement('li'),title=document.createElement('strong'),detail=document.createElement('span');
@@ -73,6 +73,7 @@ window.DealsWeb = (() => {
     $('signin-email').readOnly=busy;$('signin-code').readOnly=busy;
     $('code-submit').disabled=busy;setText('code-submit',verifyBusy?'Verifying…':'Verify code');
     $('different-email').disabled=busy;$('unknown-create').disabled=busy;
+    $('signin-cancel').hidden=authStep==='code';$('not-you').hidden=authStep!=='email'||!knownEmail()||!$('signin-email').value;
     updateCountdown();
   }
   function updateCountdown() {
@@ -108,11 +109,11 @@ window.DealsWeb = (() => {
     if (!hooks) return;
     hooks.onLoading(initializing || loadingUsage);
     const authenticating=signinRequested&&!user,focused=authenticating||mergePending||Boolean(welcome);
-    setText('about-title',focused?'Account':'Your card');$('about-title').hidden=false;
+    setText('about-title',authenticating&&authStep==='code'?'Check your email':welcome?'Welcome back':focused?'Account':'Your card');$('about-title').hidden=false;
     $('about-sheet').classList.toggle('account-focused',focused);
     document.querySelector('.about-usage').hidden=true;
-    $('account-title').hidden=focused;$('account-status').hidden=authenticating||mergePending;
-    $('account-privacy').hidden=authenticating||mergePending;
+    $('account-title').hidden=focused;$('account-status').hidden=authenticating||mergePending||Boolean(welcome);
+    $('account-privacy').hidden=authenticating||mergePending||Boolean(welcome);
     $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
     setText('account-privacy',user?'Your uses are private to you.':'Each person uses their own email and has a separate card.');
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.note!==undefined?1:0),0);
@@ -122,18 +123,21 @@ window.DealsWeb = (() => {
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
       problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
-    $('account-status').textContent = message;
+    const allRows={...rows};for(const [id,item] of Object.entries(outbox))allRows[id]=optimistic(id,item);const values=Object.values(allRows),uses=values.reduce((n,row)=>n+row.used,0),deals=values.filter(row=>row.used>0).length;
+    const result=plural(uses,'use')+' on '+plural(deals,'deal')+' · '+(!navigator.onLine?'saved offline':count?'syncing':problem?'saved here':'synced just now');
+    $('account-status').textContent = user&&!problem?result:message;
+    $('last-synced').hidden=!user||!lastSynced;setText('last-synced','Last synced '+(Date.now()-lastSynced<60000?'just now':Math.floor((Date.now()-lastSynced)/60000)+' min ago'));
     $('about-sync').textContent = message;
     $('account-email').hidden = !user;
-    setText('account-email',user?(mergePending?'Signed in as '+user.email+'. Your card is private and synced.':'Signed in as '+user.email):'');
-    $('signout').hidden = !user||mergePending;
+    setText('account-email',user?.email||'');
+    $('signout').hidden = !user||mergePending||Boolean(welcome);
     $('signin-panel').hidden = !signinRequested || Boolean(user);
-    $('signout-help').hidden=!user||mergePending;renderAuth();
-    $('auth-success').hidden=!welcome||mergePending;setText('auth-welcome',welcome);
+    $('signout-help').hidden=true;renderAuth();
+    $('auth-success').hidden=!welcome||mergePending;setText('auth-welcome',result);if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
     $('sync-retry').hidden = !configured || !problem;
     $('merge-panel').hidden=!user||!mergePending;
   }
-  function showAccount() { hooks.showAccount(); account(); }
+  function showAccount() { hooks.showAccount(); account(); requestAnimationFrame(()=>document.querySelector('.account')?.scrollIntoView({block:'start'})); }
   function canWrite(action=null) {
     if (!configured || (user && !initializing && !loadingUsage && !mergePending && !onboarding && !signOutBusy)) return true;
     pendingAction=action;if(!user)openSignin();showAccount();
@@ -182,7 +186,7 @@ window.DealsWeb = (() => {
         if(action)queued.deltas=queued.deltas.filter(d=>d.token!==action.token);
         else if(queued.token===item.token)delete queued.note;
         if(!queued.deltas.length&&queued.note===undefined){delete outbox[id];if(collisions.has(id)){const limit=limits.get(id);remoteNotices.set(id,'Updated');collisions.delete(id);}}
-        problem = '';retryDelay=15000; persist(); emit();
+        problem = '';lastSynced=Date.now();retryDelay=15000; persist(); emit();
       }
     } catch {
       if (generation === epoch) {
@@ -205,7 +209,7 @@ window.DealsWeb = (() => {
         if (!old?.updated_at || item.updated_at >= old.updated_at)
           rows[item.offer_id] = {...clean(item), updated_at: item.updated_at};
       }
-      loadingUsage = false; problem = '';retryDelay=15000; persist(); emit();
+      loadingUsage = false; problem = '';lastSynced=Date.now();retryDelay=15000; persist(); emit();
       if(onboarding)finishSignin();
     } catch { if (generation === epoch) { loadingUsage = false; problem = 'Couldn’t refresh your uses. Retry when connected.'; account(); } }
   }
@@ -299,7 +303,7 @@ window.DealsWeb = (() => {
       cooldown();renderAuth();$('signin-code').focus();
     }catch(error){
       if(authMode==='signin'&&(error.code==='otp_disabled'||error.code==='user_not_found'||/signups? (?:not allowed|disabled)|user not found/i.test(error.message||''))){
-        authError("There's no account for "+email+' yet.');$('unknown-create').hidden=false;
+        authError("No account for "+email+' yet.');$('unknown-create').hidden=false;
       }else authError(authErrorMessage(error,false));
     }finally{signInBusy=false;account();}
   }
@@ -368,7 +372,7 @@ window.DealsWeb = (() => {
       }
     }
     mergeReceipt=fingerprint;persist();localUsage={};remove(localKey);mergePending=false;
-    welcome=keep?'Your device uses were added. They sync when connected.':'Your account’s uses are ready on this device.';
+    welcome=keep?'Your device uses were added.'+(!navigator.onLine?' They sync when connected.':''):'Your account’s uses are ready on this device.';
     emit();void flush();
   }
   function continueAfterSignin() {
@@ -441,6 +445,7 @@ window.DealsWeb = (() => {
     $('auth-continue').onclick=continueAfterSignin;
     $('signin-open').onclick=openSignin;
     $('signin-cancel').onclick=()=>{pendingAction=null;signinRequested=false;account();hooks.closeAccount();};
+    $('not-you').onclick=()=>{remove('deals-known-email');$('signin-email').value='';renderAuth();$('signin-email').focus();};
     $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus();};
     $('resend').onclick=sendCode;
     const install=document.createElement('div');install.className='install-row';install.innerHTML='<button class="summary-row" aria-expanded="false">Add to Home Screen <svg viewBox="0 0 24 24" aria-hidden="true" class="install-chevron icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button><p hidden>On iPhone, use Safari’s Share menu, then Add to Home Screen. You’ll sign in once inside the app. On a laptop, use your browser’s install button.</p>';install.querySelector('button').onclick=()=>{const button=install.querySelector('button'),open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));install.querySelector('p').hidden=!open;};
@@ -455,7 +460,8 @@ window.DealsWeb = (() => {
       try {
         const {error} = await client.auth.signOut({scope: 'local'});
         if (error) throw error;
-        await sessionChanged(null);
+        remove('deals-known-email');remove('deals-auth-attempt');authAttempt=null;authStep='email';signinRequested=false;$('signin-email').value='';
+        await sessionChanged(null);hooks.toast('Signed out. Your uses stay in your account.');
       } catch { problem = 'Couldn’t sign out. Please try again.'; account(); }
       finally { signOutBusy=false;$('signout').disabled = false;account(); }
     };
