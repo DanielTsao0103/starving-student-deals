@@ -5,7 +5,6 @@ window.DealsWeb = (() => {
   const config = window.DEALS_CONFIG || {};
   const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
   const localKey = 'deals-web-local-v1';
-  const sdkURL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
   let loadingUsage = false, lastSynced=0;
   let retryDelay=15000;
@@ -14,12 +13,13 @@ window.DealsWeb = (() => {
   let authMode='create', authStep='email', authAttempt=null, verifyBusy=false, resendAt=0;
   let welcome='', onboarding=false, newAccount=false, mergePending=false, mergeReceipt=null;
   let signOutBusy=false;
-  const offers=new Map(JSON.parse($('deals').textContent).offers.map(o=>[o.id,o]));
+  const offers=new Map();
   const setText=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
   const plural=(count,word)=>count+' '+word+(count===1?'':'s');
   let syncRetryTimer, authSubscription, localUsage = {}, signInBusy = false;
   const inFlight = new Map(), remoteNotices=new Map(), collisions=new Set();
-  const limits=new Map(JSON.parse($('deals').textContent).offers.map(o=>[o.id,o.limit]));
+  const limits=new Map();
+  function updateCatalog(items) {offers.clear();limits.clear();for(const o of items){offers.set(o.id,o);limits.set(o.id,o.limit);}}
   const clamp=(id,n)=>Math.min(limits.get(id)??Number.MAX_SAFE_INTEGER,Math.max(0,n));
   function optimistic(id,item){return {used:clamp(id,(rows[id]?.used||0)+(item.deltas||[]).reduce((sum,d)=>sum+d.delta,0)),note:item.note??rows[id]?.note??''};}
   const clean = row => ({used: Math.max(0, Number.isSafeInteger(row?.used) ? row.used : 0), note: String(row?.note || '').slice(0, 500)});
@@ -27,8 +27,8 @@ window.DealsWeb = (() => {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
   }
   function store(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch { memoryOnly = true; return false; }
+    try { localStorage.setItem(key, JSON.stringify(value)); memoryOnly=false;hooks?.saveFailure?.(false);return true; }
+    catch { memoryOnly = true;hooks?.saveFailure?.(true);return false; }
   }
   function accountKey(id = user?.id) { return 'deals-web-account-v1:' + id; }
   function persist() { return user ? store(accountKey(), {rows, outbox, mergeReceipt}) : false; }
@@ -73,7 +73,7 @@ window.DealsWeb = (() => {
     $('signin-email').readOnly=busy;$('signin-code').readOnly=busy;
     $('code-submit').disabled=busy;setText('code-submit',verifyBusy?'Verifying…':'Verify code');
     $('different-email').disabled=busy;$('unknown-create').disabled=busy;
-    $('signin-cancel').hidden=authStep==='code';$('not-you').hidden=authStep!=='email'||!knownEmail()||!$('signin-email').value;
+    $('not-you').hidden=authStep!=='email'||!knownEmail()||!$('signin-email').value;
     updateCountdown();
   }
   function updateCountdown() {
@@ -109,7 +109,9 @@ window.DealsWeb = (() => {
     if (!hooks) return;
     hooks.onLoading(initializing || loadingUsage);
     const authenticating=signinRequested&&!user,focused=authenticating||mergePending||Boolean(welcome);
-    setText('about-title',authenticating&&authStep==='code'?'Check your email':welcome?'Welcome back':focused?'Account':'Your card');$('about-title').hidden=false;
+    // Keep AUTH.md's complete new-account receipt in the live status below.
+    // A neutral sheet title avoids announcing the same greeting twice.
+    setText('about-title',authenticating&&authStep==='code'?'Check your email':welcome?(newAccount?'Your card':'Welcome back'):focused?'Account':'Your card');$('about-title').hidden=false;
     $('about-sheet').classList.toggle('account-focused',focused);
     document.querySelector('.about-usage').hidden=true;
     $('account-title').hidden=focused;$('account-status').hidden=authenticating||mergePending||Boolean(welcome);
@@ -124,16 +126,18 @@ window.DealsWeb = (() => {
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
       problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
     const allRows={...rows};for(const [id,item] of Object.entries(outbox))allRows[id]=optimistic(id,item);const values=Object.values(allRows),uses=values.reduce((n,row)=>n+row.used,0),deals=values.filter(row=>row.used>0).length;
-    const result=plural(uses,'use')+' on '+plural(deals,'deal')+' · '+(!navigator.onLine?'saved offline':count?'syncing':problem?'saved here':'synced just now');
+    const stale=lastSynced&&Date.now()-lastSynced>300000;
+    const syncLabel=stale?'Last synced '+Math.floor((Date.now()-lastSynced)/60000)+' min ago':'Synced just now';
+    const result=(uses?plural(uses,'use')+' on '+plural(deals,'deal')+' · ':'')+(!navigator.onLine?'saved offline':count?'syncing':problem?'saved here':syncLabel);
     $('account-status').textContent = user&&!problem?result:message;
-    $('last-synced').hidden=!user||!lastSynced;setText('last-synced','Last synced '+(Date.now()-lastSynced<60000?'just now':Math.floor((Date.now()-lastSynced)/60000)+' min ago'));
+    $('last-synced').hidden=true;setText('last-synced','');
     $('about-sync').textContent = message;
     $('account-email').hidden = !user;
     setText('account-email',user?.email||'');
     $('signout').hidden = !user||mergePending||Boolean(welcome);
     $('signin-panel').hidden = !signinRequested || Boolean(user);
     $('signout-help').hidden=true;renderAuth();
-    $('auth-success').hidden=!welcome||mergePending;setText('auth-welcome',result);if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
+    $('auth-success').hidden=!welcome||mergePending;setText('auth-welcome',newAccount?"You're all set. Uses you mark now sync to your other devices.":uses?plural(uses,'use')+' on '+plural(deals,'deal'):'Your card is ready.');if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
     $('sync-retry').hidden = !configured || !problem;
     $('merge-panel').hidden=!user||!mergePending;
   }
@@ -265,13 +269,7 @@ window.DealsWeb = (() => {
   async function connect() {
     if (!configured) return;
     try {
-      if (!window.supabase) await new Promise((resolve, reject) => {
-        const script = document.createElement('script'); script.src = sdkURL;
-        script.onload = resolve; script.onerror = reject; document.head.append(script);
-      });
-      client ||= window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
-        auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}
-      });
+      client ||= await window.DealsCatalog.getClient();
       if (!authSubscription) authSubscription = client.auth.onAuthStateChange((_event, session) => {
         // Supabase holds its auth lock here; defer database calls until it releases it.
         setTimeout(() => void sessionChanged(session), 0);
@@ -431,6 +429,7 @@ window.DealsWeb = (() => {
     }finally{if(generation===epoch)settingsFlushing=false;}
   }
   function init(callbacks) {
+    updateCatalog(window.DealsCatalog.current.data.offers);
     hooks = callbacks;const indicator=document.createElement('button');indicator.type='button';indicator.onclick=showAccount;indicator.id='header-sync';indicator.className='header-sync text-button';indicator.hidden=true;$('about-button').after(indicator);localUsage = read(localKey);
     if (!configured) rows = {...localUsage};
     authMode=knownEmail()?'signin':'create';$('signin-email').value=knownEmail();
@@ -444,7 +443,6 @@ window.DealsWeb = (() => {
     $('unknown-create').onclick=()=>{chooseMode('create');void sendCode();};
     $('auth-continue').onclick=continueAfterSignin;
     $('signin-open').onclick=openSignin;
-    $('signin-cancel').onclick=()=>{pendingAction=null;signinRequested=false;account();hooks.closeAccount();};
     $('not-you').onclick=()=>{remove('deals-known-email');$('signin-email').value='';renderAuth();$('signin-email').focus();};
     $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus();};
     $('resend').onclick=sendCode;
@@ -475,5 +473,5 @@ window.DealsWeb = (() => {
       $('account-status').textContent = 'Offline setup unavailable. Reload when connected.';
     });
   }
-  return {init, save, saveSettings, canWrite, account,notice:id=>remoteNotices.get(id),clearNotice:id=>remoteNotices.delete(id)};
+  return {init, updateCatalog, save, saveSettings, canWrite, account,notice:id=>remoteNotices.get(id),clearNotice:id=>remoteNotices.delete(id)};
 })();
