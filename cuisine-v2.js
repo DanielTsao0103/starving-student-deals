@@ -85,10 +85,13 @@ export const SYNONYMS = {
   'Sandwiches & Subs': ['sandwich', 'sandwiches', 'sub', 'subs', 'hoagie', 'deli'],
   Seafood: ['seafood'],
 };
+const vocabulary=[...new Set([...Object.keys(REGIONS),...Object.values(REGIONS).flat(),...FOOD_TYPES])].map(name=>({name,normalized:normalize(name),synonyms:SYNONYMS[name]||[]}));
+const targetCache=new Map();
 export function queryTargets(query) {
-  const q = normalize(query);
-  return [...new Set([...Object.keys(REGIONS), ...Object.values(REGIONS).flat(), ...FOOD_TYPES])]
-    .filter(name => normalize(name) === q || (SYNONYMS[name] ?? []).includes(q));
+  if(!query)return [];
+  const q=normalize(query);if(!q)return [];
+  if(!targetCache.has(q)){if(targetCache.size>=64)targetCache.delete(targetCache.keys().next().value);targetCache.set(q,vocabulary.filter(v=>v.normalized===q||v.synonyms.includes(q)).map(v=>v.name));}
+  return targetCache.get(q);
 }
 /** American is both a region and a cuisine: region selection intentionally wins. */
 export function matchesCuisine(business, value = 'All', secondary = true, rows) {

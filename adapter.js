@@ -8,12 +8,17 @@ window.DealsWeb = (() => {
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
   let loadingUsage = false, lastSynced=0;
   let retryDelay=15000;
-  let initializing = configured, flushing = false, problem = '', memoryOnly = false, live = false;
+  let initializing = configured, flushing = false, writeProblem = '', readProblem='', liveProblem='', signoutError='', memoryOnly = false, live = false;
   let pendingAction=null, signinRequested=false, resendTimer=null;
   let authMode='signin', authStep='email', authAttempt=null, verifyBusy=false, resendAt=0;
   let welcome='', onboarding=false, newAccount=false, mergePending=false, mergeReceipt=null;
+  let signoutConfirm=false;
+  const RPC_TIMEOUT_MS=config.rpcTimeoutMs??15000;
+  const timeout=()=>AbortSignal.timeout(RPC_TIMEOUT_MS);
+  const acknowledged=new Set(),deferredRows=new Map();
   let signOutBusy=false, deleteConfirm=false, deleteBusy=false, retryNotBefore=0, retryReason='';
   const deletedAccounts=new Set();
+  const emailCooldown=new Map();
   let invites;
   const offers=new Map();
   const setText=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
@@ -21,19 +26,43 @@ window.DealsWeb = (() => {
   let syncRetryTimer, authSubscription, localUsage = {}, signInBusy = false;
   const inFlight = new Map(), remoteNotices=new Map(), collisions=new Set();
   const limits=new Map();
-  function updateCatalog(items) {offers.clear();limits.clear();for(const o of items){offers.set(o.id,o);limits.set(o.id,o.limit);}}
+  function updateCatalog(items) {offers.clear();limits.clear();for(const o of items){offers.set(o.id,o);limits.set(o.id,o.limit);}rows=sanitizeRows(rows);localUsage=sanitizeRows(localUsage);if(hooks){outbox=mergeQueue({},outbox);emit();}}
   const clamp=(id,n)=>Math.min(limits.get(id)??2147483647,Math.max(0,n));
   function optimistic(id,item){return {used:clamp(id,(rows[id]?.used||0)+(item.deltas||[]).reduce((sum,d)=>sum+d.delta,0)),note:item.notes?.at(-1)?.note??item.note??rows[id]?.note??''};}
-  const clean = row => ({used: Math.max(0, Number.isSafeInteger(row?.used) ? row.used : 0), note: String(row?.note || '').slice(0, 500)});
+  const clean = row => ({used:Math.max(0,Number.isFinite(Number(row?.used))?Math.floor(Number(row.used)):0),note:typeof row?.note==='string'?row.note.slice(0,500):''});
+  function sanitizeRows(value){const result={};for(const [id,row]of Object.entries(value&&typeof value==='object'?value:{})){if(offers.size&&!offers.has(id))continue;result[id]={...clean(row),used:clamp(id,clean(row).used),...(row?.updated_at?{updated_at:row.updated_at}:{})};}return result;}
+  function readRows(key){return sanitizeRows(read(key));}
+  // Web Locks serialize read-modify-write across tabs, preserving unrelated IDs.
+  const storageLock=fn=>navigator.locks?navigator.locks.request('deals-usage-write',fn):fn();
+  function mergeQueue(stored={},current={}){
+    const merged={};for(const id of new Set([...Object.keys(stored),...Object.keys(current)])){
+      if(offers.size&&!offers.has(id))continue;
+      const item={deltas:[],notes:[]};for(const kind of ['deltas','notes']){
+        const ops=new Map();for(const op of [...(stored[id]?.[kind]||[]),...(current[id]?.[kind]||[])])if(op?.token&&!acknowledged.has(op.token))ops.set(op.token,op);
+        item[kind]=[...ops.values()];
+      }
+      if(stored[id]?.blocked||current[id]?.blocked)item.blocked=current[id]?.blocked||stored[id]?.blocked;
+      if(item.deltas.length||item.notes.length)merged[id]=item;
+    }return merged;
+  }
   function read(key, fallback = {}) {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
   }
   function store(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); memoryOnly=false;hooks?.saveFailure?.(false);return true; }
+    try { const encoded=JSON.stringify(value);if(localStorage.getItem(key)!==encoded)localStorage.setItem(key,encoded); memoryOnly=false;hooks?.saveFailure?.(false);return true; }
     catch { memoryOnly = true;hooks?.saveFailure?.(true);return false; }
   }
   function accountKey(id = user?.id) { return 'deals-web-account-v1:' + id; }
-  function persist() { return user ? store(accountKey(), {rows, outbox, mergeReceipt, retryNotBefore, retryReason}) : false; }
+  async function persist() {
+    const generation=epoch;return storageLock(()=>{
+    if(!user||generation!==epoch)return false;
+    const cached=read(accountKey());for(const token of cached.acknowledged||[])acknowledged.add(token);
+    for(const [id,row]of Object.entries(sanitizeRows(cached.rows)))if(!rows[id]||row.updated_at&&row.updated_at>rows[id].updated_at)rows[id]=row;
+    outbox=mergeQueue(cached.outbox,outbox);
+    return store(accountKey(),{rows:sanitizeRows(rows),outbox,acknowledged:[...acknowledged],mergeReceipt,retryNotBefore,retryReason});
+    });
+  }
+  function resetRetry(){if(retryReason!=='P0001'){retryNotBefore=0;retryDelay=15000;clearTimeout(syncRetryTimer);}}
   function remove(key) { try { localStorage.removeItem(key); } catch { memoryOnly=true; } }
   function knownEmail() { try { return localStorage.getItem('deals-known-email') || ''; } catch { return ''; } }
   function rememberEmail(email) { try { localStorage.setItem('deals-known-email',email); } catch { memoryOnly=true; } }
@@ -67,7 +96,7 @@ window.DealsWeb = (() => {
     setText('signin-intro',pendingAction?.kind==='use'?"Sign in to save this use. It's added as soon as you're in.":'Use your invited email. Each person has a separate card.');
     setText('signin-title','Sign in');
     setText('signin-submit',signInBusy?'Sending…':'Email me a code');
-    $('signin-submit').disabled=initializing||busy;
+    $('signin-submit').disabled=initializing||busy||Date.now()<(emailCooldown.get($('signin-email').value.trim().toLowerCase())||0);
     $('signin-email').readOnly=busy;$('signin-code').readOnly=busy;
     $('code-submit').disabled=busy;setText('code-submit',verifyBusy?'Verifying…':'Verify code');
     $('different-email').disabled=busy;
@@ -75,13 +104,14 @@ window.DealsWeb = (() => {
     updateCountdown();
   }
   function updateCountdown() {
-    const seconds=Math.max(0,Math.ceil((resendAt-Date.now())/1000));
+    const email=$('signin-email').value.trim().toLowerCase(),seconds=Math.max(0,Math.ceil(((emailCooldown.get(email)||0)-Date.now())/1000));
+    $('signin-submit').disabled=initializing||signInBusy||verifyBusy||seconds>0;if(authStep==='email'&&!signInBusy)setText('signin-submit',seconds?'You can request another code in '+seconds+'s':'Email me a code');
     $('resend').disabled=seconds>0||signInBusy||verifyBusy;
     setText('resend',seconds?'Resend code in '+seconds+'s':'Resend code');
     if(!seconds){clearInterval(resendTimer);resendTimer=null;}
   }
   function cooldown(seconds=60) {
-    resendAt=Date.now()+seconds*1000;clearInterval(resendTimer);
+    resendAt=Date.now()+seconds*1000;emailCooldown.set($('signin-email').value.trim().toLowerCase(),resendAt);clearInterval(resendTimer);
     resendTimer=setInterval(updateCountdown,1000);updateCountdown();
   }
   function authError(message) {
@@ -118,17 +148,19 @@ window.DealsWeb = (() => {
     $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
     setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. '+(user?'Delete them with Delete my account and data below.':'Delete them with Delete my account and data when signed in.'));
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.notes?.length||0),0);
-    const indicator=$('header-sync'),hidden=!configured||(!problem&&((!user&&navigator.onLine)||navigator.onLine&&!count&&!flushing)),label=problem?'Not syncing · '+count+' saved here':!navigator.onLine?'Offline':flushing?'Syncing…':count+' waiting';if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
+    const indicator=$('header-sync'),hidden=!configured||navigator.onLine&&!count&&!readProblem;
+    const label=!navigator.onLine?'Offline':count&&writeProblem?'Not syncing · '+count+' saved here':count?(flushing?'Syncing…':count+' waiting'):readProblem?"Couldn't refresh":'';
+    if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
     const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
-      initializing ? 'Connecting to your account…' : !user ? (problem || 'Saved on this device only') :
+      initializing ? 'Connecting to your account…' : !user ? (writeProblem || 'Saved on this device only') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
-      problem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
+      (count&&writeProblem) || readProblem || liveProblem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
     const allRows={...rows};for(const [id,item] of Object.entries(outbox))allRows[id]=optimistic(id,item);const values=Object.values(allRows),uses=values.reduce((n,row)=>n+row.used,0),deals=values.filter(row=>row.used>0).length;
     const stale=lastSynced&&Date.now()-lastSynced>300000;
     const syncLabel=stale?'Last synced '+Math.floor((Date.now()-lastSynced)/60000)+' min ago':'Synced just now';
-    const result=(uses?plural(uses,'use')+' on '+plural(deals,'deal')+' · ':'')+(!navigator.onLine?'saved offline':count?'syncing':problem?'saved here':syncLabel);
-    $('account-status').textContent = user&&!problem?result:message;
+    const result=(uses?plural(uses,'use')+' on '+plural(deals,'deal')+' · ':'')+(!navigator.onLine?'saved offline':count?'syncing':writeProblem?'saved here':syncLabel);
+    $('account-status').textContent = user&&!writeProblem&&!readProblem&&!liveProblem?result:message;
     $('last-synced').hidden=true;setText('last-synced','');
     $('about-sync').textContent = message;
     $('account-email').hidden = !user||Boolean(catchupStep);
@@ -141,15 +173,15 @@ window.DealsWeb = (() => {
     $('catchup-open').hidden=!user||focused;
     $('catchup-panel').hidden=!catchupStep;
     $('signin-panel').hidden = !signinRequested || Boolean(user);
-    $('signout-help').hidden=true;renderAuth();
+    $('signout-help').hidden=!signoutError;setText('signout-help',signoutError);$('signout-confirm').hidden=!signoutConfirm;setText('signout-warning',plural(count,'change')+" haven't synced yet. Signing out removes them from this device.");renderAuth();
     $('auth-success').hidden=!welcome||mergePending||Boolean(catchupStep);setText('auth-welcome',welcome);if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
-    $('sync-retry').hidden = !configured || !problem;
+    $('sync-retry').hidden = !configured || !(count&&writeProblem||readProblem);
     $('merge-panel').hidden=!user||!mergePending;
   }
   function showAccount() { hooks.showAccount(); account(); requestAnimationFrame(()=>document.querySelector('.account')?.scrollIntoView({block:'start'})); }
   function canWrite(action=null) {
     if (!configured || (user && !initializing && !loadingUsage && !mergePending && !onboarding && !signOutBusy)) return true;
-    pendingAction=action;if(!user)openSignin();showAccount();
+    pendingAction=action;if(loadingUsage&&user){hooks.announce?.('Loading your uses. This use will be saved.');return false;}if(!user)openSignin();showAccount();
     return false;
   }
   async function save(id, next, source='app') {
@@ -158,7 +190,7 @@ window.DealsWeb = (() => {
     if(!['app','catch-up','merge'].includes(source))return false;
     next = clean(next);
     if (!configured) {
-      rows[id] = next; localUsage = {...rows}; store(localKey, rows); emit(); return true;
+      return storageLock(()=>{rows=readRows(localKey);rows[id]={...next,used:clamp(id,next.used)};localUsage={...rows};store(localKey,rows);emit();return true;});
     }
     // Persist before acknowledging the optimistic update. The queue survives reloads.
     const current=outbox[id]?optimistic(id,outbox[id]):clean(rows[id]);
@@ -166,7 +198,7 @@ window.DealsWeb = (() => {
     queueDelta(item,delta,source);
     if(next.note!==current.note)item.notes.push({note:next.note,token:crypto.randomUUID()});
     outbox[id]=item;
-    persist(); emit(); void flush(); return true;
+    await persist(); emit(); void flush(); return true;
   }
   /** Split large batches before persisting; each immutable payload has its own receipt. */
   function queueDelta(item,delta,source) {
@@ -178,21 +210,22 @@ window.DealsWeb = (() => {
     if(Date.now()<retryNotBefore){syncRetryTimer=setTimeout(()=>void flush(),retryNotBefore-Date.now());return;}
     flushing = true;
     const generation = epoch;
-    let active;
+    let active,activeId;
     try {
       while (generation === epoch && navigator.onLine && !signOutBusy) {
         const entry=Object.entries(outbox).find(([,item])=>!item.blocked);
         if(!entry)break;
         const [id,item]=entry;
         const count=item.deltas[0],note=item.notes[0];
-        if(!count&&!note){delete outbox[id];persist();continue;}
+        if(!count&&!note){delete outbox[id];await persist();continue;}
         // Capture both ID and payload before await. Edits append a new operation.
         const action={...(count||note)},expected=clamp(id,(rows[id]?.used||0)+(count?.delta||0));
-        active=item;
+        active=item;activeId=id;
         inFlight.set(id,{used:expected,note:count?rows[id]?.note||'':action.note});
+        (count||note).sent=true;await persist();
         const result=count
-          ? await client.rpc('bump_usage',{p_offer_id:id,p_delta:action.delta,p_op_id:action.token,p_source:action.source==='normal'?'app':action.source||'app'})
-          : await client.rpc('set_usage_note',{p_offer_id:id,p_note:action.note,p_op_id:action.token});
+          ? await client.rpc('bump_usage',{p_offer_id:id,p_delta:action.delta,p_op_id:action.token,p_source:action.source==='normal'?'app':action.source||'app'}).abortSignal(timeout())
+          : await client.rpc('set_usage_note',{p_offer_id:id,p_note:action.note,p_op_id:action.token}).abortSignal(timeout());
         if(generation!==epoch)return;
         inFlight.delete(id);
         if(result.error)throw result.error;
@@ -201,44 +234,57 @@ window.DealsWeb = (() => {
         if(count&&data.used!==expected)collisions.add(id);
         const previous=rows[id];
         if(!previous?.updated_at||!data.updated_at||data.updated_at>=previous.updated_at)rows[id]={...clean(data),updated_at:data.updated_at};
-        const queued=outbox[id];
+        acknowledged.add(action.token);const queued=outbox[id]||{deltas:[],notes:[]};
         if(count)queued.deltas=queued.deltas.filter(d=>d.token!==action.token);
         else queued.notes=queued.notes.filter(n=>n.token!==action.token);
         if(!queued.deltas.length&&!queued.notes.length){delete outbox[id];if(collisions.has(id)){remoteNotices.set(id,'Updated');collisions.delete(id);}}
-        problem = '';lastSynced=Date.now();retryDelay=15000;retryNotBefore=0; persist(); emit();if($('detail').dataset.offerId===id)void showHistory(id);
+        writeProblem = '';lastSynced=Date.now();retryDelay=15000;retryNotBefore=0; await persist(); emit();if($('detail').dataset.offerId===id)void showHistory(id);
       }
-      if(Object.values(outbox).some(item=>item.blocked))problem='A change could not sync. Your device copy is kept. Contact Dan for help.';
+      if(Object.values(outbox).some(item=>item.blocked))writeProblem='A change could not sync. Your device copy is kept. Contact Dan for help.';
     } catch(error) {
       if (generation === epoch) {
+        inFlight.clear();for(const row of deferredRows.values())void receiveRow(row,generation);deferredRows.clear();
         const permanent=['22023','23503','42501'].includes(error.code);
-        if(permanent){active.blocked=error.code;problem='A change could not sync. Your device copy is kept. Contact Dan for help.';}
+        if(permanent){(outbox[activeId]||active).blocked=error.code;writeProblem='A change could not sync. Your device copy is kept. Contact Dan for help.';}
         else {
-          problem='Changes saved on this device. Sync will retry.';
-          const delay=error.code==='P0001'?60000+Math.random()*10000:retryDelay;
+          writeProblem='Changes saved on this device. Sync will retry.';
+          const delay=error.code==='P0001'?60000+Math.random()*10000:Math.min(retryDelay,RPC_TIMEOUT_MS);
           retryReason=error.code||'';retryNotBefore=Date.now()+delay;
           syncRetryTimer=setTimeout(()=>void flush(),delay);retryDelay=Math.min(60000,retryDelay*2);
         }
-        persist();
+        await persist();
       }
     } finally {
       if (generation === epoch) { flushing = false; account(); }
     }
   }
+  async function receiveRow(item,generation=epoch){
+    const id=item.offer_id;if(!offers.has(id)||generation!==epoch)return;
+    if(inFlight.has(id)){deferredRows.set(id,item);return;}
+    const sent=[...(outbox[id]?.deltas||[]),...(outbox[id]?.notes||[])].filter(op=>op.sent);
+    if(sent.length){
+      try{const {data,error}=await client.from('usage_ops').select('op_id').in('op_id',sent.map(op=>op.token)).abortSignal(timeout());
+        if(error||generation!==epoch)return;
+        for(const op of data||[])acknowledged.add(op.op_id);
+        // An absent receipt is still ambiguous until the idempotent retry returns.
+        if(sent.some(op=>!acknowledged.has(op.token)))return;
+        outbox=mergeQueue({},outbox);
+      }catch{return;}
+    }
+    const old=rows[id];if(!old?.updated_at||!item.updated_at||item.updated_at>=old.updated_at)rows[id]={...clean(item),used:clamp(id,clean(item).used),updated_at:item.updated_at};
+    await persist();emit();
+  }
   async function refresh(generation = epoch) {
     if (!user || signOutBusy || !navigator.onLine) return;
     const owner = user.id;
     try {
-      const {data, error} = await client.from('usage').select('*').eq('user_id', owner);
+      const {data, error} = await client.from('usage').select('*').eq('user_id', owner).abortSignal(timeout());
       if (generation !== epoch) return;
       if (error) throw error;
-      for (const item of data || []) {
-        const old = rows[item.offer_id];
-        if (!old?.updated_at || item.updated_at >= old.updated_at)
-          rows[item.offer_id] = {...clean(item), updated_at: item.updated_at};
-      }
-      loadingUsage = false; problem = '';lastSynced=Date.now();retryDelay=15000; persist(); emit();
-      if(onboarding)finishSignin();
-    } catch { if (generation === epoch) { loadingUsage = false; problem = 'Couldn’t refresh your uses. Retry when connected.'; account(); } }
+      for(const item of data||[])await receiveRow(item,generation);
+      loadingUsage = false; readProblem = '';lastSynced=Date.now();retryDelay=15000; await persist(); emit();
+      if(onboarding)finishSignin();else replayPending();
+    } catch { if (generation === epoch) { loadingUsage = false; readProblem = "Couldn't refresh your uses. Retry when connected.";account();replayPending(); } }
   }
   async function sessionChanged(session) {
     const nextUser = deletedAccounts.has(session?.user?.id)?null:session?.user||null;
@@ -249,13 +295,13 @@ window.DealsWeb = (() => {
       catchupStep='';catchupCounts={};deleteConfirm=false;
       remove(accountKey(previousUser.id));remove('deals-web-settings-v1:'+previousUser.id);
       localUsage={};remove(localKey);welcome='';mergePending=false;onboarding=false;pendingAction=null;
-      remoteNotices.clear();collisions.clear();
+      remoteNotices.clear();collisions.clear();acknowledged.clear();
     }
     clearTimeout(syncRetryTimer);clearTimeout(settingsRetryTimer);hooks.onReset();
     if (channel) { void client.removeChannel(channel); channel = null; }
-    user = nextUser; void invites?.session(client, user); settingsFlushing=false;settingsReady=false;const settingsCache=user?read(settingsKey()):{};settings=settingsCache.settings||{};settingsPending=settingsCache.pending||{};hooks.onSettings(user?{...settings,...settingsPending}:null);flushing = false; inFlight.clear(); live = false; problem = '';
+    user = nextUser; void invites?.session(client, user); settingsFlushing=false;settingsReady=false;const settingsCache=user?read(settingsKey()):{};settings=settingsCache.settings||{};settingsPending=settingsCache.pending||{};hooks.onSettings(user?{...settings,...settingsPending,accountId:user.id}:null);flushing = false; inFlight.clear(); live = false; writeProblem = '';readProblem='';liveProblem='';signoutError='';signoutConfirm=false;
     const cached = user ? read(accountKey()) : {};
-    rows = cached.rows || {}; outbox = cached.outbox || {};mergeReceipt=cached.mergeReceipt||null;retryNotBefore=cached.retryNotBefore||0;retryReason=cached.retryReason||'';
+    rows = sanitizeRows(cached.rows);outbox=cached.outbox||{};for(const token of cached.acknowledged||[])acknowledged.add(token);mergeReceipt=cached.mergeReceipt||null;retryNotBefore=cached.retryNotBefore||0;retryReason=cached.retryReason||'';if(navigator.onLine)resetRetry();
     if(user){
       authAttempt ||= read('deals-auth-attempt',null);
       onboarding=Boolean(authAttempt?.email===user.email)||differences().length>0;
@@ -278,18 +324,12 @@ window.DealsWeb = (() => {
         if (generation !== epoch) return;
         const item = payload.new, id = item?.offer_id;
         if (!id || item.user_id !== user.id) return;
-        const old = rows[id];
-        if (old?.updated_at && item.updated_at < old.updated_at) return;
-        const ownEcho = JSON.stringify(clean(inFlight.get(id))) === JSON.stringify(clean(item)) && inFlight.has(id);
-        const changed = old && JSON.stringify(clean(old)) !== JSON.stringify(clean(item));
-        rows[id] = {...clean(item), updated_at: item.updated_at};
-        if(!ownEcho&&outbox[id])collisions.add(id);else if(!ownEcho&&changed)remoteNotices.set(id,'Updated');
-        persist(); emit();
+        void receiveRow(item,generation);
       }).subscribe(state => {
         if (generation !== epoch) return;
         live = state === 'SUBSCRIBED';
-        if (live) { void refresh(generation).then(() => flush()); }
-        else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') problem = 'Live sync reconnecting. Your changes are saved.';
+        if (live) {liveProblem='';void refresh(generation).then(() => flush()); }
+        else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED') liveProblem = 'Live updates paused. Your changes still save.';
         account();
       });
     await refresh(generation);
@@ -308,13 +348,13 @@ window.DealsWeb = (() => {
       if (error) throw error;
       await sessionChanged(data.session);
     } catch {
-      initializing = false; problem = 'Sign-in is unavailable right now. You can still browse.'; account();
+      initializing = false; writeProblem = 'Sign-in is unavailable right now. You can still browse.'; account();
     }
   }
   /** Request a code in the chosen mode; resends retain the first request time. */
   async function sendCode(event) {
     event?.preventDefault();if(signInBusy||verifyBusy)return;
-    if(authStep==='code'&&Date.now()<resendAt)return;
+    if(Date.now()<(emailCooldown.get($('signin-email').value.trim().toLowerCase())||0))return;
     if(!$('signin-form').reportValidity())return;
     const email=$('signin-email').value.trim().toLowerCase();
     const startedAt=authAttempt?.email===email?authAttempt.startedAt:Date.now();
@@ -341,6 +381,7 @@ window.DealsWeb = (() => {
     const message=error.message||'',code=error.code||'';
     if(error.status===429||/rate_limit|over_email_send|over_request/.test(code)||/rate limit|too many|after .*seconds/i.test(message)){
       const seconds=Number(error.retryAfter)||Number(message.match(/after (\d+) seconds/i)?.[1]);
+      if(verifying)return 'Too many tries. '+(seconds?'Wait '+seconds+' seconds and try again.':'Wait a moment and try again.');
       if(seconds)cooldown(Math.max(seconds,60));
       return 'Too many emails right now. '+(seconds?'Try again in '+plural(seconds,'second')+'.':'Try again in a few minutes.');
     }
@@ -400,25 +441,18 @@ window.DealsWeb = (() => {
         outbox[item.id]=queued;
       }
     }
-    mergeReceipt=fingerprint;persist();localUsage={};remove(localKey);mergePending=false;
+    mergeReceipt=fingerprint;await persist();localUsage={};remove(localKey);mergePending=false;
     const current=[...offers.keys()].map(currentUsage),uses=current.reduce((sum,row)=>sum+row.used,0),deals=current.filter(row=>row.used>0).length;
     welcome=keep?'Added '+added+' uses from this device. Your card now has '+uses+' uses on '+deals+' deals.':'Your account’s uses are ready on this device.';
     applyPendingUse();
     emit();void flush();
   }
-  function applyPendingUse(){
-    if(pendingAction?.kind!=='use'||mergePending)return;
-    const action=pendingAction,offer=offers.get(action.id);if(!offer)return;
-    const before=currentUsage(action.id);if(offer.limit!==null&&before.used>=offer.limit)return;
-    pendingAction=null;
-    void save(action.id,{...before,used:before.used+1});
-    welcome+='\nMarked used: '+offer.business+'.';
-  }
+  function replayPending(){if(!pendingAction||loadingUsage||initializing||mergePending||onboarding||!user)return;const action=pendingAction;pendingAction=null;hooks.replay(action);}
+  function applyPendingUse(){if(pendingAction?.kind==='use'){const name=offers.get(pendingAction.id)?.business;replayPending();if(!pendingAction&&name)welcome+='\nMarked used: '+name+'.';}}
   function continueAfterSignin() {
     if(mergePending)return;
     if(newAccount){newAccount=false;welcome='';openCatchup('ask');return;}
-    const action=pendingAction;pendingAction=null;welcome='';account();hooks.closeAccount();
-    if(action)hooks.replay(action);
+    welcome='';replayPending();account();hooks.closeAccount();
   }
   let catchupStep='',catchupCounts={},catchupUndo=null;
   const catchupLocks=new Map();
@@ -432,7 +466,7 @@ window.DealsWeb = (() => {
   function beforeCloseAccount(){
     if(deleteBusy)return true;
     if(catchupStep){finishCatchup();return true;}
-    deleteConfirm=false;return false;
+    deleteConfirm=false;if(welcome||newAccount){welcome='';newAccount=false;replayPending();account();}return false;
   }
   function catchupMatches(){
     const normalize=text=>text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'');
@@ -523,15 +557,15 @@ window.DealsWeb = (() => {
     if(!user||!client||signOutBusy||!navigator.onLine)return;
     const owner=user.id;
     try {
-      const {data,error}=await client.from('user_settings').select('location_opt_in,home_city,updated_at').eq('user_id',owner).maybeSingle();
+      const {data,error}=await client.from('user_settings').select('location_opt_in,home_city,updated_at').eq('user_id',owner).maybeSingle().abortSignal(timeout());
       if(generation!==epoch)return;
       if(error)throw error;
       settings=data||{};settingsReady=true;
       const device=hooks.getLocationSettings();
       if(device.location_opt_in&&!settings.location_opt_in)settingsPending.location_opt_in=true;
       // A saved city on a new account can seed its preference, but never overwrite a remote choice on load.
-      if(!settings.home_city&&device.home_city&&device.home_city.length<=100&&!Object.hasOwn(settingsPending,'home_city'))settingsPending.home_city=device.home_city;
-      persistSettings();hooks.onSettings({...settings,...settingsPending});void flushSettings();
+      if((device.homeCitySource!=='account'||device.accountId===owner)&&!settings.home_city&&device.home_city&&device.home_city.length<=100&&!Object.hasOwn(settingsPending,'home_city'))settingsPending.home_city=device.home_city;
+      persistSettings();hooks.onSettings({...settings,...settingsPending,accountId:owner});void flushSettings();
     }catch {
       if(generation===epoch){
         // Migration may not be deployed yet; device location remains fully usable.
@@ -547,12 +581,12 @@ window.DealsWeb = (() => {
         const patch={...settingsPending};
         const next={user_id:owner,location_opt_in:settings.location_opt_in===true||patch.location_opt_in===true,
           home_city:Object.hasOwn(patch,'home_city')?patch.home_city:settings.home_city||null,updated_at:new Date().toISOString()};
-        const {error}=await client.from('user_settings').upsert(next,{onConflict:'user_id'});
+        const {error}=await client.from('user_settings').upsert(next,{onConflict:'user_id'}).abortSignal(timeout());
         if(generation!==epoch)return;
         if(error)throw error;
         settings=next;
         for(const [key,value] of Object.entries(patch))if(settingsPending[key]===value)delete settingsPending[key];
-        persistSettings();hooks.onSettings(settings);
+        persistSettings();hooks.onSettings({...settings,accountId:owner});
       }
     }catch {
       if(generation===epoch){clearTimeout(settingsRetryTimer);settingsRetryTimer=setTimeout(()=>void refreshSettings(generation),15000);}
@@ -560,12 +594,12 @@ window.DealsWeb = (() => {
   }
   function init(callbacks) {
     updateCatalog(window.DealsCatalog.current.data.offers);
-    hooks = callbacks;const indicator=document.createElement('button');indicator.type='button';indicator.onclick=showAccount;indicator.id='header-sync';indicator.className='header-sync text-button';indicator.hidden=true;$('about-button').after(indicator);localUsage = read(localKey);
+    hooks = callbacks;const indicator=document.createElement('button');indicator.type='button';indicator.onclick=showAccount;indicator.id='header-sync';indicator.className='header-sync text-button';indicator.hidden=true;$('about-button').after(indicator);localUsage = readRows(localKey);
     if (!configured) rows = {...localUsage};
     invites ||= window.createDealsInvites(account);
     authMode='signin';$('signin-email').value=knownEmail();
     $('signin-form').onsubmit=sendCode;$('code-form').onsubmit=verifyCode;
-    $('signin-email').oninput=()=>authError('');
+    $('signin-email').oninput=()=>{authError('');renderAuth();};
     $('signin-code').oninput=()=>{paintCode();authError('');if($('signin-code').value.length===6)void verifyCode();};
     $('signin-code').onpaste=event=>{
       const digits=event.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
@@ -591,22 +625,39 @@ window.DealsWeb = (() => {
 
     $('merge-keep').onclick = () => void mergeLocal(true);
     $('merge-skip').onclick = () => void mergeLocal(false);
-    $('sync-retry').onclick = () => {clearTimeout(syncRetryTimer);retryDelay=15000;if(retryReason!=='P0001')retryNotBefore=0; problem = ''; if (!client || !user) void connect(); else void refresh().then(flush); };
-    $('signout').onclick = async () => {
-      $('signout').disabled = true;signOutBusy=true;
-      try {
-        const {error} = await client.auth.signOut({scope: 'local'});
-        if (error) throw error;
+    $('sync-retry').onclick = () => {clearTimeout(syncRetryTimer);retryDelay=15000;if(retryReason!=='P0001')retryNotBefore=0; writeProblem = '';readProblem=''; if (!client || !user) void connect(); else void refresh().then(flush); };
+    const pendingCount=()=>Object.values(outbox).reduce((n,item)=>n+item.deltas.length+item.notes.length,0);
+    const signout=async(force=false)=>{
+      if(signOutBusy)return;
+      $('signout').disabled=true;signoutError='';
+      if(!force&&pendingCount()){
+        resetRetry();await flush();
+        if(pendingCount()){signoutConfirm=true;account();$('signout').disabled=false;$('signout-stay').focus();return;}
+      }
+      const removed=pendingCount();signOutBusy=true;
+      try{
+        // The SDK removes its session even on a logout 500. Check transport first,
+        // so a failed sign-out keeps the account and its outbox available to retry.
+        const {data}=await client.auth.getSession();
+        if(navigator.onLine&&data.session?.access_token){
+          const response=await fetch(config.supabaseUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.supabaseAnonKey,Authorization:'Bearer '+data.session.access_token},signal:timeout()});
+          if(!response.ok&&![401,403,404].includes(response.status))throw new Error('Sign out failed');
+        }
+        const authKey='sb-'+new URL(config.supabaseUrl).hostname.split('.')[0]+'-auth-token';
+        remove(authKey);remove(authKey+'-code-verifier');remove(authKey+'-user');
+        const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;
         remove('deals-known-email');remove('deals-auth-attempt');authAttempt=null;authStep='email';signinRequested=false;$('signin-email').value='';
-        await sessionChanged(null);hooks.toast('Signed out. Your uses stay in your account.');
-      } catch { problem = 'Couldn’t sign out. Please try again.'; account(); }
-      finally { signOutBusy=false;$('signout').disabled = false;account(); }
+        await sessionChanged(null);hooks.toast(removed?'Signed out. '+plural(removed,'unsynced change')+' were removed from this device.':'Signed out. Your uses stay in your account.');
+      }catch{signoutError='Couldn’t sign out. Please try again.';}
+      finally{signOutBusy=false;signoutConfirm=false;$('signout').disabled=false;account();}
     };
+    $('signout').onclick=()=>signout();$('signout-anyway').onclick=()=>signout(true);$('signout-stay').onclick=()=>{signoutConfirm=false;account();$('signout').focus();};
     emit(); void connect();
-    addEventListener('online', () => { account(); if (user) {void refresh().then(flush);void refreshSettings();} else if (configured) void connect(); });
+    addEventListener('online', () => { resetRetry();account(); if (user) {void refresh().then(flush);void refreshSettings();} else if (configured) void connect(); });
     addEventListener('offline', account);
-    addEventListener('storage', event => {
-      if (!configured && event.key === localKey) { rows = read(localKey); localUsage = {...rows}; emit(); }
+    addEventListener('storage', async event => {
+      if(!configured&&(event.key===localKey||event.key===null)){rows=event.key===null?{}:readRows(localKey);localUsage={...rows};emit();}
+      else if(user&&(event.key===accountKey()||event.key===null)){await persist();emit();void flush();}
     });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {
       $('account-status').textContent = 'Offline setup unavailable. Reload when connected.';
