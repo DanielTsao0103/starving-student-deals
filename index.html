@@ -2091,7 +2091,8 @@ function precisionLabel(fix, detail = false, cached = false) {
 function formatDistance(miles) {
   if (miles === null || !Number.isFinite(miles) || miles < 0) return '';
   if (miles < 0.1) return `${Math.round(miles * 5280 / 50) * 50} ft`;
-  return `${miles.toFixed(1)} mi`;
+  // Longer trips use whole miles; nearby trips retain useful decimal precision.
+  return `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi`;
 }
 /**
  * Initial high-accuracy fix (15s), then at most 20s of refinement. Best means
