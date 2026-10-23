@@ -5,8 +5,8 @@
   "display": "standalone",
   "start_url": ".",
   "scope": ".",
-  "theme_color": "#040a1f",
-  "background_color": "#141416",
+  "theme_color": "#eef2fa",
+  "background_color": "#eef2fa",
   "description": "Find nearby Starving Student Card offers and track your uses.",
   "categories": [
     "food",

@@ -50,14 +50,14 @@ window.DealsWeb = (() => {
     setText('merge-title',newAccount?'Add your device uses?':'Choose which uses to keep');
     const remote=Object.values(rows),uses=remote.reduce((n,row)=>n+row.used,0),deals=remote.filter(row=>row.used>0).length;
     setText('merge-message','Your account has '+plural(uses,'use')+' on '+plural(deals,'deal')+'. This device has '+count+' more.');
-    setText('merge-keep',newAccount?'Add':'Keep both');setText('merge-skip',"Discard this device's uses");
+    setText('merge-keep',newAccount?'Add':'Keep both');setText('merge-skip',"Don't add this device's uses");
     const list=$('merge-differences');list.replaceChildren();
     for(const item of changes){
       const li=document.createElement('li'),title=document.createElement('strong'),detail=document.createElement('span');
       title.textContent=offers.get(item.id).business;
       const count=document.createElement('span');count.className='merge-count';count.textContent=item.delta?'+'+item.delta:'';title.append(count);
       detail.textContent=offers.get(item.id).offer;
-      li.append(title,detail);list.append(li);
+      li.append(title,detail);if(item.note){const note=document.createElement('span');note.className='quiet';note.textContent=item.note;li.append(note);}list.append(li);
     }
   }
   function renderAuth() {
@@ -116,7 +116,7 @@ window.DealsWeb = (() => {
     $('account-title').hidden=focused;$('account-status').hidden=focused;
     $('account-privacy').hidden=focused;
     $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
-    setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. Delete them with “Delete my account and data” when signed in.');
+    setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. '+(user?'Delete them with Delete my account and data below.':'Delete them with Delete my account and data when signed in.'));
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.notes?.length||0),0);
     const indicator=$('header-sync'),hidden=!configured||(!problem&&((!user&&navigator.onLine)||navigator.onLine&&!count&&!flushing)),label=problem?'Not syncing · '+count+' saved here':!navigator.onLine?'Offline':flushing?'Syncing…':count+' waiting';if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
     const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
@@ -142,7 +142,7 @@ window.DealsWeb = (() => {
     $('catchup-panel').hidden=!catchupStep;
     $('signin-panel').hidden = !signinRequested || Boolean(user);
     $('signout-help').hidden=true;renderAuth();
-    $('auth-success').hidden=!welcome||mergePending||Boolean(catchupStep);setText('auth-welcome',newAccount?"You're all set. Uses you mark now sync to your other devices.":uses?plural(uses,'use')+' on '+plural(deals,'deal'):'Your card is ready.');if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
+    $('auth-success').hidden=!welcome||mergePending||Boolean(catchupStep);setText('auth-welcome',welcome);if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
     $('sync-retry').hidden = !configured || !problem;
     $('merge-panel').hidden=!user||!mergePending;
   }
@@ -328,10 +328,12 @@ window.DealsWeb = (() => {
       authAttempt={email,mode:authMode,startedAt,sentAt:Date.now()};store('deals-auth-attempt',authAttempt);
       authStep='code';$('signin-code').value='';paintCode();
       setText('sent-message','Enter the 6-digit code sent to '+email);
-      cooldown();renderAuth();$('signin-code').focus();
+      cooldown();renderAuth();$('signin-code').focus({preventScroll:true});
     }catch(error){
       if(authMode==='signin'&&(error.code==='otp_disabled'||error.code==='user_not_found'||/signups? (?:not allowed|disabled)|user not found/i.test(error.message||''))){
-        authError('');setText('signin-status','This app is invite-only. Ask Dan to add you.');
+        // An uninvited address is an account notice, not a failed code entry.
+        authError('');
+        setText('signin-status','This app is invite-only. Ask Dan to add '+email+'.');
       }else authError(authErrorMessage(error,false));
     }finally{signInBusy=false;account();}
   }
@@ -369,7 +371,7 @@ window.DealsWeb = (() => {
       authError(authErrorMessage(error,true));
       if(!matchMedia('(prefers-reduced-motion:reduce)').matches)document.querySelector('.code-field').animate(
         [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(-3px)'},{transform:'translateX(0)'}],{duration:220});
-      $('signin-code').focus();$('signin-code').select();
+      $('signin-code').focus({preventScroll:true});$('signin-code').select();
     }finally{verifyBusy=false;account();}
   }
   function finishSignin() {
@@ -383,13 +385,13 @@ window.DealsWeb = (() => {
       'Welcome back. Your card is synced: '+plural(used,'use')+' on '+plural(deals,'deal')+'.';
     authAttempt=null;remove('deals-auth-attempt');authStep='email';$('signin-code').value='';paintCode();
     clearInterval(resendTimer);resendAt=0;
-    if(mergePending)renderMerge();
+    if(mergePending)renderMerge();else applyPendingUse();
     if(hasAttempt||mergePending){showAccount();$('about-title').focus({preventScroll:true});}else{welcome='';account();}
   }
   /** Commit receipt + outbox together before consuming the anonymous device cache. */
   async function mergeLocal(keep) {
     if(!user||!mergePending)return;
-    const fingerprint=localFingerprint();
+    const fingerprint=localFingerprint(),added=keep?differences().reduce((sum,item)=>sum+item.delta,0):0;
     if(keep&&mergeReceipt!==fingerprint){
       for(const item of differences()){
         const queued=outbox[item.id]||{deltas:[],notes:[]};
@@ -399,8 +401,18 @@ window.DealsWeb = (() => {
       }
     }
     mergeReceipt=fingerprint;persist();localUsage={};remove(localKey);mergePending=false;
-    welcome=keep?'Your device uses were added.'+(!navigator.onLine?' They sync when connected.':''):'Your account’s uses are ready on this device.';
+    const current=[...offers.keys()].map(currentUsage),uses=current.reduce((sum,row)=>sum+row.used,0),deals=current.filter(row=>row.used>0).length;
+    welcome=keep?'Added '+added+' uses from this device. Your card now has '+uses+' uses on '+deals+' deals.':'Your account’s uses are ready on this device.';
+    applyPendingUse();
     emit();void flush();
+  }
+  function applyPendingUse(){
+    if(pendingAction?.kind!=='use'||mergePending)return;
+    const action=pendingAction,offer=offers.get(action.id);if(!offer)return;
+    const before=currentUsage(action.id);if(offer.limit!==null&&before.used>=offer.limit)return;
+    pendingAction=null;
+    void save(action.id,{...before,used:before.used+1});
+    welcome+='\nMarked used: '+offer.business+'.';
   }
   function continueAfterSignin() {
     if(mergePending)return;
@@ -414,7 +426,7 @@ window.DealsWeb = (() => {
   function openCatchup(step='pick') {
     catchupStep=step;catchupCounts={};catchupUndo=null;
     $('catchup-search').value='';renderCatchup();account();
-    (step==='pick'?$('catchup-search'):$('catchup-title')).focus();
+    (step==='pick'?$('catchup-search'):$('catchup-title')).focus({preventScroll:true});
   }
   function finishCatchup(){catchupStep='';catchupCounts={};catchupUndo=null;continueAfterSignin();}
   function beforeCloseAccount(){
@@ -553,6 +565,7 @@ window.DealsWeb = (() => {
     invites ||= window.createDealsInvites(account);
     authMode='signin';$('signin-email').value=knownEmail();
     $('signin-form').onsubmit=sendCode;$('code-form').onsubmit=verifyCode;
+    $('signin-email').oninput=()=>authError('');
     $('signin-code').oninput=()=>{paintCode();authError('');if($('signin-code').value.length===6)void verifyCode();};
     $('signin-code').onpaste=event=>{
       const digits=event.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
@@ -565,12 +578,12 @@ window.DealsWeb = (() => {
     $('catchup-search').oninput=renderCatchup;
     $('catchup-search').onkeydown=event=>{if(event.key==='Enter'){const matches=catchupMatches();if(new Set(matches.map(o=>o.business)).size===1){event.preventDefault();const o=matches.find(o=>currentUsage(o.id).used<(o.limit??2147483647));if(o)changeCatchup(o.id,currentUsage(o.id).used+1);$('catchup-search').value='';renderCatchup();}}};
     $('catchup-undo').onclick=()=>{if(!catchupUndo)return;const {id,delta}=catchupUndo;catchupCounts[id]-=delta;void save(id,{...currentUsage(id),used:Math.max(0,currentUsage(id).used-delta)},'catch-up');catchupUndo=null;renderCatchup();};
-    $('delete-open').onclick=()=>{deleteConfirm=true;setText('delete-status','');account();$('delete-title').focus();};
-    $('delete-cancel').onclick=()=>{deleteConfirm=false;account();$('delete-open').focus();};
+    $('delete-open').onclick=()=>{deleteConfirm=true;setText('delete-status','');account();$('delete-title').focus({preventScroll:true});};
+    $('delete-cancel').onclick=()=>{deleteConfirm=false;account();$('delete-open').focus({preventScroll:true});};
     $('delete-confirm').onclick=deleteAccount;
     $('signin-open').onclick=openSignin;
-    $('not-you').onclick=()=>{remove('deals-known-email');$('signin-email').value='';renderAuth();$('signin-email').focus();};
-    $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus();};
+    $('not-you').onclick=()=>{remove('deals-known-email');$('signin-email').value='';renderAuth();$('signin-email').focus({preventScroll:true});};
+    $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus({preventScroll:true});};
     $('resend').onclick=sendCode;
     const install=document.createElement('div');install.className='install-row';install.innerHTML='<button class="summary-row" aria-expanded="false">Add to Home Screen <svg viewBox="0 0 24 24" aria-hidden="true" class="install-chevron icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button><p hidden>On iPhone, use Safari’s Share menu, then Add to Home Screen. You’ll sign in once inside the app. On a laptop, use your browser’s install button.</p>';install.querySelector('button').onclick=()=>{const button=install.querySelector('button'),open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));install.querySelector('p').hidden=!open;};
     install.hidden=matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;document.querySelector('.about-lines').after(install);
