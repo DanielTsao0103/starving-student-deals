@@ -1,6 +1,6 @@
 /* Account requests never enter CacheStorage. Each published build owns its shell. */
 const PREFIX = 'deals-shell-' + self.registration.scope + '-';
-const CACHE = PREFIX + 'cd9a65f3be4245188ac46bc63e8864a6';
+const CACHE = PREFIX + 'e46ea72a2a1646f180956398dc22dc35';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./config.js", "./adapter.js", "./admin-invites.js", "./catalog.js", "./cuisine-v2.js", "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png", "./favicon.png"];
 const SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
 const shellURLs = new Set(SHELL.map(path => new URL(path, self.registration.scope).href));

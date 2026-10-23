@@ -106,7 +106,7 @@
 @media(max-width:899px){.recommend-controls{gap:4px}}
 @media(max-width:899px){#sort-order{max-width:150px}}
 @media(max-width:899px){.recommend-controls label{font-size:var(--type-caption)}}
-@media(display-mode:standalone){body::before{content:'';position:fixed;inset:0 0 auto 0;height:env(safe-area-inset-top,0px);background:var(--bar);z-index:20}}
+
 @media(display-mode:standalone){.install-row{display:none}}
 @media(display-mode:standalone){.install-hint{display:none}}
 @media(display-mode:standalone){.header{padding-top:max(20px,env(safe-area-inset-top,0px))}}
@@ -343,9 +343,9 @@ svg.chevron{width:1rem;height:1rem;stroke-width:2}
 .clear{border:0;background:var(--clear);color:var(--muted);min-width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:var(--radius-pill)}
 #add-note .icon{width:1.125rem;height:1.125rem}
 #categories{display:flex;flex:none;width:100%;margin:0;padding:var(--space-4) 0;overflow-x:auto;scrollbar-width:none;gap:var(--space-4);min-height:52px;align-items:center}
-#city-button{text-overflow:ellipsis;color:var(--text);position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto!important;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
-#cuisine-button{padding-inline:var(--space-8);position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto!important;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
-#availability-button{position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto!important;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
+#city-button{text-overflow:ellipsis;color:var(--text);position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
+#cuisine-button{padding-inline:var(--space-8);position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
+#availability-button{position:relative;margin:0;overflow:visible;flex:0 0 auto!important;width:auto;max-width:none;min-width:88px;border:0;border-radius:var(--radius-pill);background:var(--subtle);padding:0 var(--space-12);font-size:var(--type-caption);white-space:nowrap;min-height:max(44px,2.75rem);height:auto;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-4)}
 .recommendation{border-color:var(--accent);border:var(--hairline) solid var(--accent);background:var(--surface)}
 .status-pill{display:inline-block;background:var(--subtle);padding:var(--space-4) var(--space-8);font-size:var(--type-caption);font-weight:500;border-radius:var(--radius-pill)}
 .context-menu{background:var(--subtle);display:inline-flex;align-items:center;position:relative;border-radius:var(--radius-pill);height:auto;min-height:44px}
@@ -689,7 +689,7 @@ summary:active{background-color:var(--selected);scale:1;transform:scale(.97);tra
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.toolbar #date-context{grid-column:1/-1}}
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.list-pane{grid-column:1;grid-row:1}}
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.detail-placeholder{grid-column:2;grid-row:1}}
-@media(display-mode:standalone){.toolbar.scrolled{padding-top:calc(8px + env(safe-area-inset-top,0px))}}
+
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.card-mark{min-height:36px;height:36px}}
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.toolbar #city-button{height:36px;min-height:36px}}
 @media(min-width:1100px) and (min-height:560px) and (hover:hover) and (pointer:fine){.toolbar #cuisine-button{height:36px;min-height:36px}}
@@ -707,7 +707,7 @@ summary:active{background-color:var(--selected);scale:1;transform:scale(.97);tra
 @media(prefers-reduced-transparency:reduce),(prefers-contrast:more){#about-sheet{background:var(--surface);backdrop-filter:none}}
 @media(max-width:899px),(max-height:559px),(pointer:coarse){.header-sync{flex:1 0 100%;text-align:left}}
 @media(max-width:899px),(max-height:559px),(pointer:coarse){.detail.many-branches{height:80dvh;max-height:80dvh}}
-@media(max-width:899px),(max-height:559px),(pointer:coarse){#browse-chrome{display:block;position:sticky;top:calc(var(--chrome-offset,0px) * -1);z-index:8}}
+@media(max-width:899px),(max-height:559px),(pointer:coarse){#browse-chrome{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) - var(--chrome-offset,0px));z-index:8}}
 @media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){.search:not(:focus-within):has(#search:placeholder-shown) #search-key{display:block}}
 @media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){.deal:hover:not(.selected){background:var(--hover)}}
 @media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){.deal.selected{background:var(--selected)}}
@@ -831,12 +831,12 @@ body::after{content:none}
 /* Only the text capsule is opaque; stretching the answer must not create a slab. */
 .list-heading .count-copy{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;background:var(--field-top);border-radius:var(--radius-pill);padding:2px 8px}
 .list-heading .count-copy:has(.inline-city){padding-block:0}
-@container (max-width:480px){.list-heading .sort-label{width:44px}#sort-order>span{display:none}}
-@media(max-width:899px),(max-height:559px),(pointer:coarse){.list-heading{grid-template-columns:minmax(0,1fr) auto 44px}.list-heading .sort-label{width:44px}}
+
+
 
 .list-heading #result-count{grid-column:1;grid-row:1;display:block;width:auto;min-width:0;white-space:nowrap;overflow:hidden;font-size:var(--type-caption);line-height:24px;background:transparent;padding:0;margin-left:-8px}
 .inline-city{display:inline-flex;white-space:nowrap}
-@container (max-width:360px){#sort-order>span{display:none}#sort-order{min-width:44px;width:44px;padding:0;justify-content:center}}
+
 #results>.merchant:first-child,#results>.section-label:first-child{margin-top:0}
 .quick-use::after{content:'';position:absolute;inset:-7px -6px;border-radius:inherit}
 .rail .pill::after{content:'';position:absolute;inset:-4px 0;border-radius:inherit}
@@ -881,31 +881,29 @@ body::after{content:none}
 @media(max-width:899px),(max-height:559px),(pointer:coarse){
  #location-body{display:none}
  #location-sheet .utility-head{margin-bottom:8px}
- .toolbar .filter-collapse{display:grid;grid-template-rows:1fr;transition:grid-template-rows 220ms cubic-bezier(.2,.8,.2,1);margin-top:0}
+ .toolbar .filter-collapse{display:block;margin-top:0}
  .filter-collapse>.filter-row{min-height:0;overflow:hidden;transition:opacity 160ms,visibility 0s 0s}
- .toolbar.search-hidden .filter-collapse{grid-template-rows:0fr;margin-top:calc(-1 * var(--space-8))}
+ .toolbar.search-hidden .filter-collapse{pointer-events:none}
  .toolbar.search-hidden .filter-collapse>.filter-row{opacity:0;visibility:hidden;pointer-events:none;transition:opacity 160ms,visibility 0s 160ms}
- .toolbar.search-hidden{gap:8px;padding:4px 0 8px}
+ .toolbar.search-hidden{gap:8px}
  .large-text .toolbar .search{min-height:44px;height:44px}
  .large-text .search input{height:44px}
  .large-text #categories .pill{height:44px;min-height:44px}
  .large-text .toolbar #categories{height:52px;min-height:52px;padding-block:4px}
  .large-text .toolbar .filter-row{flex-wrap:nowrap;overflow:hidden;mask-image:none}
  .large-text .list-heading #result-count{font-size:.65rem}
- .large-text #sort-order>span{display:none}
+
  .utility:not(#location-sheet)::after,.detail::after{content:'';position:absolute;left:0;right:0;top:100%;height:40vh;background:var(--surface);pointer-events:none}
  .utility:not(#location-sheet),.detail{overflow:visible}
  .about-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;padding-bottom:16px}
- .shell[data-sheet]:not([data-sheet=""]){transform:scale(calc(1 - .03 * var(--sheet-progress,0)));filter:brightness(calc(1 - .06 * var(--sheet-progress,0)));border-radius:12px 12px 0 0;transform-origin:top center}
+ .shell:is([data-sheet="detail"],[data-sheet="about"]){transform:scale(calc(1 - .03 * var(--sheet-progress,0)));filter:brightness(calc(1 - .06 * var(--sheet-progress,0)));border-radius:12px 12px 0 0;transform-origin:top center}
 }
 .backdrop{position:fixed;inset:0;background:var(--overlay);z-index:19;opacity:var(--scrim-progress,1);visibility:hidden;pointer-events:none}
-body:has(#app[data-sheet]:not([data-sheet=""]),.detail.closing,.utility.closing:not(#location-sheet))>.backdrop{visibility:visible;pointer-events:auto}
+body:has(#app[data-sheet]:not([data-sheet=""]),.detail.closing)>.backdrop{visibility:visible;pointer-events:auto}
 /* Receding chrome dissolves into the field; control outlines stay legible. */
-#app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync,.search,.pill,#sort-order,.card-mark){background:transparent}
-#app[data-sheet]:not([data-sheet=""]) .toolbar::before{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;animation:none}
-#app[data-sheet]:not([data-sheet=""]) .toolbar::after{background:transparent;border:0}
+#app:is([data-sheet="detail"],[data-sheet="about"]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync){background:transparent}
 @media(max-width:899px),(max-height:559px),(pointer:coarse){
- #app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync){background:color-mix(in srgb,var(--field-top) calc((1 - var(--sheet-progress,0)) * 100%),transparent)}
+ #app:is([data-sheet="detail"],[data-sheet="about"]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync){background:color-mix(in srgb,var(--field-top) calc((1 - var(--sheet-progress,0)) * 100%),transparent)}
 }
 @media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){
  #location-sheet{position:relative;inset:auto;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:12px;row-gap:0;padding:12px 16px;margin:0 0 12px;border-radius:12px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -934,6 +932,52 @@ body:has(#app[data-sheet]:not([data-sheet=""]),.detail.closing,.utility.closing:
 }
 
 .about-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;padding-bottom:16px}
+
+/* nav1legacy: fixed layout slots, unchanged materials, composite-only collapse. */
+html.modal-open{overflow:hidden}
+.toolbar,.toolbar.scrolled,.toolbar.search-hidden{padding-block:8px}
+.toolbar .filter-row{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-wrap:nowrap;gap:8px}
+.toolbar .filter-collapse{min-width:0}
+.toolbar #city-button{width:6rem;flex:0 0 6rem!important;justify-content:center}
+.filter-slot{position:relative;flex:0 0 7.5rem;width:7.5rem;height:44px}
+.filter-slot+.filter-slot{flex-basis:7.875rem;width:7.875rem}
+.toolbar .filter-slot>:is(.pill,#cuisine-button,#availability-button){width:100%;height:100%;min-height:0;max-width:none;justify-content:center;display:inline-flex;align-items:center;gap:8px;padding:0 12px;background:var(--surface);border:var(--hairline) solid var(--line)}
+.toolbar .filter-slot>.pill[aria-pressed="true"]{background:var(--active-fill);color:var(--active-text);border-color:var(--active-fill)}
+.toolbar .filter-slot .cuisine-value{overflow:hidden;text-overflow:ellipsis}
+.toolbar .filter-row #clear-filters{flex:0 0 7rem!important;width:7rem!important;height:44px;margin:0;white-space:nowrap}
+/* Reserve Clear even when absent, so laptop search never grows on a filter change. */
+.toolbar .filter-row #clear-filters[hidden]{display:block!important;visibility:hidden;pointer-events:none}
+.list-heading{grid-template-columns:minmax(0,1fr) 9rem;height:68px;min-height:68px}
+.list-heading .sort-label{grid-column:2;width:9rem}
+.list-heading #sort-order{white-space:nowrap}
+.list-heading #sort-order>span{display:inline}
+.list-heading #result-count{white-space:normal;overflow:visible;line-height:1.4}
+.list-heading .count-copy{white-space:normal;overflow:visible;text-overflow:clip}
+.list-heading .inline-city{display:flex;width:max-content;min-height:32px}
+@media(max-width:899px),(max-height:559px),(pointer:coarse){
+ .toolbar #categories{transition:transform 180ms ease-out}
+ .toolbar.search-hidden #categories{transform:translateY(-52px)}
+ .toolbar.search-hidden::before{bottom:28px}
+ .toolbar .filter-collapse{height:44px;flex:none}
+ .toolbar .filter-collapse>.filter-row{height:44px}
+ .toolbar::before{top:calc(-8px - env(safe-area-inset-top,0px))}
+}
+@media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){
+ body:has(#app[data-sheet]:not([data-sheet=""]):not([data-sheet="about"]))>.backdrop{visibility:hidden;pointer-events:none}
+ .toolbar .filter-slot{height:36px}
+ .list-heading{height:44px;min-height:44px}
+ .list-heading .inline-city{display:inline-flex;margin-left:8px}
+ .toolbar .filter-row #clear-filters{height:36px;min-height:36px}
+ .toolbar .filter-collapse{overflow:hidden}
+ .toolbar .filter-row{width:100%}
+ .toolbar::before{top:calc(-16px - env(safe-area-inset-top,0px))}
+}
+@media(prefers-reduced-motion:reduce){.toolbar #categories{transition:none}}
+
+@media(max-width:899px),(max-height:559px),(pointer:coarse){
+ :is(#city-sheet,#cuisine-sheet){height:var(--picker-room,70dvh);max-height:var(--picker-room,70dvh)}
+ #availability-sheet{max-height:var(--picker-room,70dvh);overflow-y:auto}
+}
 
 </style>
 <meta charset="utf-8">
@@ -1539,9 +1583,9 @@ function selectRow(id){
  }
 }
 function updateFilters(){
- setClass($('toolbar'),'date-mode',dateIdeas);const cityHome=dateIdeas?$('date-context'):document.querySelector('.filter-row');if($('city-button').parentElement!==cityHome)cityHome.prepend($('city-button'));setFlag($('availability-button'),'hidden',dateIdeas);
+ setClass($('toolbar'),'date-mode',dateIdeas);setFlag($('availability-button'),'hidden',dateIdeas);setFlag($('date-day'),'hidden',!dateIdeas);setFlag($('date-budget'),'hidden',!dateIdeas);
  const originCity=city!=='All'?city:locationPrefs.placeSource==='city'?locationPrefs.homeCity:null;buttonLabel('city-button',originCity|| (gpsOrigin?(locationLive?'Near you':'Last location'):'City'));setAttr($('city-button'),'title','City: '+city);setAttr($('city-button'),'aria-label','City: '+city);setAttr($('city-button'),'aria-pressed',String(Boolean(originCity)));setFlag($('clear-filters'),'hidden',category==='All'&&cuisine==='All'&&!dateIdeas&&!summaryView&&!query&&!freeOnly);
- const types=typeMode();$('cuisine-search').placeholder=types?'Search types':'Search cuisines';setFlag($('cuisine-button'),'hidden',dateIdeas||types&&typeNames().length<2);setText($('cuisine-button').querySelector('.cuisine-value'),cuisine==='All'?(types?'Type':'Cuisine'):cuisine);setText($('cuisine-title'),types?'Choose a type':'Choose a cuisine');setAttr($('cuisine-button'),'aria-label','Cuisine: '+cuisine);setAttr($('cuisine-button'),'aria-pressed',String(cuisine!=='All'));setAttr($('cuisine-button'),'title','Cuisine: '+cuisine);
+ const types=typeMode();$('cuisine-search').placeholder=types?'Search types':'Search cuisines';setFlag($('cuisine-button'),'hidden',dateIdeas);setText($('cuisine-button').querySelector('.cuisine-value'),cuisine==='All'?(types?'Type':'Cuisine'):cuisine);setText($('cuisine-title'),types?'Choose a type':'Choose a cuisine');setAttr($('cuisine-button'),'aria-label','Cuisine: '+cuisine);setAttr($('cuisine-button'),'aria-pressed',String(cuisine!=='All'));setAttr($('cuisine-button'),'title','Cuisine: '+cuisine);
  for(const b of $('categories').querySelectorAll('[data-value]')){const active=!dateIdeas&&b.dataset.value===category;setAttr(b,'aria-pressed',String(active));/* Roving focus moves on keyboard input only. */}setAttr($('date-ideas'),'aria-pressed',String(dateIdeas));railEdges();
 }
 function railEdges(){const rail=$('categories'),row=$('toolbar'),scrolled=rail.scrollLeft>4,end=rail.scrollWidth<=rail.clientWidth||rail.scrollWidth-rail.clientWidth-rail.scrollLeft<=1;setClass(rail,'scrolled-left',scrolled);setClass(rail,'at-end',end);setClass(row,'scrolled-left',scrolled);setClass(row,'rail-end',end);}
@@ -1557,8 +1601,8 @@ function chooseDates(enabled){endFeedback();dateIdeas=enabled;if(enabled){catego
 function dayChoices(){const today=new Date(),names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const choices=[['Today','Today ('+names[today.getDay()]+')'],['Tomorrow','Tomorrow ('+names[(today.getDay()+1)%7]+')']];for(let offset=2;offset<=7-today.getDay();offset++){const day=names[(today.getDay()+offset)%7];choices.push([day,day]);}return choices;}
 const menuChoices={day:dayChoices(),budget:[['any','Any budget'],['0','Free'],['10','Under $10'],['20','Under $20'],['40','Under $40']],sort:[['nearby','Best near me'],['value','Best value'],['match','Best match'],['nearest','Nearest'],['az','A-Z'],['fewest','Fewest uses left']]};
 function menuLabel(kind,value){return menuChoices[kind].find(x=>x[0]===value)?.[1]||value;}
-function updateMenus(){setAttr($('sort-order'),'aria-label','Sort: '+menuLabel('sort',sortMode));buttonLabel('date-day',menuLabel('day',dateDay));buttonLabel('date-budget',menuLabel('budget',dateBudget));buttonLabel('sort-order',sortMode==='fewest'?'Fewest left':menuLabel('sort',sortMode));}
-function openContextMenu(kind,fresh=true){enterSheetHistory('menu');
+function updateMenus(){setAttr($('sort-order'),'aria-label','Sort: '+menuLabel('sort',sortMode));buttonLabel('date-day',dateDay);setAttr($('date-day'),'aria-label','Day: '+menuLabel('day',dateDay));buttonLabel('date-budget',menuLabel('budget',dateBudget));buttonLabel('sort-order',sortMode==='fewest'?'Fewest left':menuLabel('sort',sortMode));}
+function openContextMenu(kind,fresh=true){
  const anchor=$(kind==='sort'?'sort-order':'date-'+kind);
  openUtility('availability',fresh,anchor);
  $('availability-title').textContent=kind==='day'?'Day':kind==='budget'?'Budget for two':'Sort';$('availability-options').replaceChildren();
@@ -1803,19 +1847,27 @@ function updateAvailability(){setAttr($('availability-button'),'aria-pressed',St
 function resetFilters(keepQuery=false){const savedQuery=keepQuery===true?query:'';summaryView=null;endFeedback();dateIdeas=false;freeOnly=false;query='';$('search').value='';$('clear-search').hidden=true;$('categories').scrollLeft=0;resetNearbySort();query=savedQuery;$('search').value=query;$('clear-search').hidden=!query;category='All';cuisine='All';dateBudget='any';dateDay='Today';persistFilters();updateFilters();renderList(true);}
 // The header inherits inert from browse-chrome; keep its own DOM unchanged.
 function applyModal(){
- const phoneDetail=Boolean(selected)&&!desktop.matches,modal=Boolean(utility)||phoneDetail,name=utility||(phoneDetail?'detail':'');
+ const phoneDetail=Boolean(selected)&&!desktop.matches,modal=Boolean(utility)&&(!desktop.matches||utility==='about')||phoneDetail,name=utility||(phoneDetail?'detail':'');
+ document.documentElement.classList.toggle('modal-open',modal);
+ for(const id of filterTriggers){const trigger=$(id);setAttr(trigger,'aria-expanded',String(Boolean(utility)&&utilityAnchor===trigger));}
+ for(const id of ['city','cuisine','availability'])setAttr($(id+'-sheet'),'aria-modal',desktop.matches?'false':'true');
  setAttr($('app'),'data-sheet',name);
  setFlag($('detail-placeholder'),'hidden',Boolean(selected)||document.querySelector('.workspace').classList.contains('empty-workspace'));
  // data-sheet is the sheet-open state (r14.12); a second class would double mutations.
  // Inert is scoped to the shell on phone; the detail lives outside it.
- if(desktop.matches){setFlag($('app'),'inert',false);setFlag($('browse-chrome'),'inert',modal);setFlag(document.querySelector('main'),'inert',Boolean(utility));}
+ if(desktop.matches){setFlag($('app'),'inert',false);setFlag($('browse-chrome'),'inert',modal);setFlag(document.querySelector('main'),'inert',modal);}
  else{setFlag($('browse-chrome'),'inert',false);setFlag(document.querySelector('main'),'inert',false);if(!CSS.supports('interactivity','inert'))setFlag($('app'),'inert',modal);}
  if(selected){setAttr($('detail'),'role',desktop.matches?'region':'dialog');setAttr($('detail'),'aria-modal',desktop.matches?null:'true');}
 }
 /** Modal handoff preserves the scrim, scroll position and focus trap. */
 const filterTriggers=['city-button','cuisine-button','availability-button','sort-order','date-day','date-budget'];
 function positionUtility(){
- if(!desktop.matches||!utility||utility==='about')return;
+ if(!utility||utility==='about')return;
+ if(!desktop.matches){
+  // Keep every visible trigger above the sheet for direct one-tap switching.
+  const bottom=Math.max(...filterTriggers.map(id=>$(id).getBoundingClientRect()).filter(r=>r.width&&r.height&&r.bottom>0&&r.top<innerHeight).map(r=>r.bottom));
+  $(utility+'-sheet').style.setProperty('--picker-room',(innerHeight<560?innerHeight*.9:Math.max(160,innerHeight-bottom-8))+'px');return;
+ }
  const sheet=$(utility+'-sheet'),rect=utilityAnchor.getBoundingClientRect(),column=$('toolbar').getBoundingClientRect();
  const bottom=rect.bottom;
  const width=sheet.offsetWidth,min=column.left+16,max=column.right-16-width;
@@ -1825,7 +1877,7 @@ function positionUtility(){
 function focusSelectedRadio(){const sheet=utility&&$(utility+'-sheet');sheet?.querySelectorAll('[role="radio"]').forEach(option=>option.tabIndex=option.getAttribute('aria-checked')==='true'?0:-1);sheet?.querySelector('[role="radio"][aria-checked="true"]')?.focus({preventScroll:true});}
 document.addEventListener('keydown',event=>{if(!event.target.matches('[role="radio"]')||!['ArrowDown','ArrowUp'].includes(event.key))return;event.preventDefault();event.stopPropagation();const options=[...event.target.closest('[role="radiogroup"]').querySelectorAll('[role="radio"]')],index=options.indexOf(event.target);const next=options[(index+(event.key==='ArrowDown'?1:-1)+options.length)%options.length];options.forEach(option=>option.tabIndex=option===next?0:-1);next.focus({preventScroll:true});},true);
 let skipSheetPop=0;
-function enterSheetHistory(name){if(desktop.matches)return;const own=history.state?.dealsSheet;if(own===name)return;if(own&&own!=='detail')history.replaceState({dealsSheet:name},'');else history.pushState({dealsSheet:name},'');}
+function enterSheetHistory(name){if(desktop.matches&&name==='detail')return;const own=history.state?.dealsSheet;if(own===name)return;if(own&&own!=='detail')history.replaceState({dealsSheet:name},'');else history.pushState({dealsSheet:name},'');}
 function leaveSheetHistory(name){if(history.state?.dealsSheet===name){skipSheetPop++;history.back();}}
 addEventListener('popstate',()=>{if(skipSheetPop){skipSheetPop--;return;}if(utility)closeUtility(true);else if(selected&&!desktop.matches)closeDetail(true);});
 function openUtility(name,fresh=true,anchor=$(name+'-button')){
@@ -1839,7 +1891,7 @@ function openUtility(name,fresh=true,anchor=$(name+'-button')){
  if(fresh)presentSheet(sheet,true);else{const state=stopSheet(sheet);state.y=0;state.v=0;state.alpha=1;state.target=0;paintSheet(sheet,state);if(!desktop.matches&&!reduceMotion.matches)sheet.animate([{opacity:0},{opacity:1}],{duration:120});}
 }
 function switchMenu(id){
- if(utilityAnchor?.id===id){closeUtility();return;}
+ if(utility&&utilityAnchor?.id===id){closeUtility();return;}
  if(utility){const previous=$(utility+'-sheet');stopSheet(previous);setFlag(previous,'hidden',true);}
  const kind={'sort-order':'sort','date-day':'day','date-budget':'budget'}[id];
  if(kind)openContextMenu(kind,false);else openUtility(id.replace('-button',''),false);
@@ -1851,9 +1903,15 @@ $('backdrop').addEventListener('pointerdown',event=>{
  if(target){event.preventDefault();suppressBackdropClick=true;switchMenu(target);}
 });
 $('backdrop').addEventListener('click',event=>{if(suppressBackdropClick){event.preventDefault();event.stopImmediatePropagation();suppressBackdropClick=false;return;}if(utility&&utility!=='about'){const id=filterTriggers.find(id=>{const r=$(id).getBoundingClientRect();return !$(id).hidden&&r.width&&event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom;});if(id){event.stopImmediatePropagation();switchMenu(id);}}},true);
+// Non-modal laptop menus dismiss without consuming the intended search, chip or row press.
+document.addEventListener('pointerdown',event=>{
+ if(!desktop.matches||!utility||utility==='about')return;
+ if($(utility+'-sheet').contains(event.target)||event.target.closest('[data-sheet-trigger]'))return;
+ closeUtility(false,false);
+},true);
 addEventListener('resize',positionUtility);
 
-function closeUtility(fromHistory=false){const name=utility;if(!name||name==='about'&&window.DealsWeb?.beforeCloseAccount())return;const sheet=$(name+'-sheet');if(fromHistory!==true)leaveSheetHistory(name);utility=null;applyModal();sheet.inert=true;returnTo(utilityAnchor);animateClose(sheet,()=>{toastRemaining=6500;resumeToast();});}
+function closeUtility(fromHistory=false,restoreFocus=true){const name=utility;if(!name||name==='about'&&window.DealsWeb?.beforeCloseAccount())return;const sheet=$(name+'-sheet');if(fromHistory!==true)leaveSheetHistory(name);utility=null;applyModal();sheet.inert=true;if(restoreFocus)returnTo(utilityAnchor);animateClose(sheet,()=>{toastRemaining=6500;resumeToast();});}
 let toastDeadline=0,toastRemaining=6500,toastHovered=false;
 function toastSpace(){document.documentElement.style.setProperty('--toast-space',$('list-toast').hidden?'0px':($('list-toast').getBoundingClientRect().height+16)+'px');}
 function dismissToast(){if(saveFailed)return;if($('list-toast').hidden&&!undoAction)return;clearTimeout(toastTimer);undoAction=null;$('list-toast').classList.remove('show');setTimeout(()=>{if(!$('list-toast').classList.contains('show')){$('list-toast').hidden=true;toastSpace();}},200);}
@@ -1959,17 +2017,18 @@ document.addEventListener('keydown',e=>{
  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)||document.activeElement?.isContentEditable;
  if(desktop.matches&&precise.matches&&feedback?.kind!=='marked'&&e.key.toLowerCase()==='u'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!typing&&selected&&!utility){e.preventDefault();markUse(selected);return;}
  if(((e.key==='/'&&!typing)||((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'))&&!utility){e.preventDefault();setClass($('toolbar'),'search-hidden',false);$('search').focus({preventScroll:true});$('search').select();return;}
- const modal=utility?$(utility+'-sheet'):selected&&!desktop.matches?$('detail'):null;
+ const modal=utility&&(!desktop.matches||utility==='about')?$(utility+'-sheet'):selected&&!desktop.matches?$('detail'):null;
  if(e.key==='Tab'&&modal){const controls=[...modal.querySelectorAll('button:not(:disabled),a[href],input,select,textarea:not(:disabled)')].filter(el=>!el.closest('[hidden]')&&el.getClientRects().length&&el.tabIndex>=0);const first=controls[0],last=controls.at(-1);if(!controls.includes(document.activeElement)){e.preventDefault();(e.shiftKey?last:first)?.focus({preventScroll:true});}else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus({preventScroll:true});}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus({preventScroll:true});}}
 });
 attachDrag($('detail-head'),$('detail'),closeDetail);attachDrag($('detail-scroll'),$('detail'),closeDetail,true);
 for(const name of ['city','cuisine','about','availability']){const sheet=$(name+'-sheet');attachDrag(sheet.querySelector('.utility-head'),sheet,closeUtility);attachDrag(sheet.querySelector('.handle'),sheet,closeUtility);attachDrag(sheet.querySelector('.city-options,.about-scroll')||sheet,sheet,closeUtility,true);}
 
-$('back-top').onclick=()=>window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});
+$('back-top').onclick=()=>{setClass($('toolbar'),'search-hidden',false);window.scrollTo({top:0,behavior:reduceMotion.matches?'instant':'smooth'});};
+$('search').addEventListener('focus',()=>setClass($('toolbar'),'search-hidden',false));
 let previousScroll=scrollY,upwardScroll=0,backTopTimer=null,chromeTransitionUntil=0;
 function hideBackTop(){const pill=$('back-top');if(pill.hidden)return;pill.classList.add('fading');if(matchMedia('(prefers-reduced-motion:reduce)').matches)pill.hidden=true;}
 $('back-top').addEventListener('transitionend',e=>{if(e.propertyName==='opacity'&&$('back-top').classList.contains('fading'))$('back-top').hidden=true;});
-window.addEventListener('scroll',()=>{const up=scrollY<previousScroll;upwardScroll=up?upwardScroll+previousScroll-scrollY:0;const canCollapse=(!desktop.matches||$('toolbar').offsetHeight>innerHeight*.35)&&!utility&&!(selected&&!desktop.matches)&&document.activeElement!==$('search');if(performance.now()>=chromeTransitionUntil){const collapsed=$('toolbar').classList.contains('search-hidden'),next=upwardScroll>=24||scrollY<24||!canCollapse?false:scrollY>previousScroll&&scrollY>120?true:collapsed;if(next!==collapsed){setClass($('toolbar'),'search-hidden',next);chromeTransitionUntil=performance.now()+240;}}else upwardScroll=0;if(confirmations.size&&Math.abs(scrollY-armedScroll)>24){confirmations.clear();renderList();}const pill=$('back-top'),show=scrollY>=innerHeight*2&&up;clearTimeout(backTopTimer);if(show){pill.hidden=false;pill.classList.remove('fading');}else hideBackTop();requestAnimationFrame(updateShowInList);previousScroll=scrollY;backTopTimer=setTimeout(hideBackTop,1500);},{passive:true});
+window.addEventListener('scroll',()=>{const up=scrollY<previousScroll;upwardScroll=up?upwardScroll+previousScroll-scrollY:0;const canCollapse=!desktop.matches&&!utility&&!(selected&&!desktop.matches)&&document.activeElement!==$('search');if(performance.now()>=chromeTransitionUntil){const collapsed=$('toolbar').classList.contains('search-hidden'),next=upwardScroll>=24||scrollY<24||!canCollapse?false:scrollY>previousScroll&&scrollY>120?true:collapsed;if(next!==collapsed){setClass($('toolbar'),'search-hidden',next);chromeTransitionUntil=performance.now()+240;}}if(confirmations.size&&Math.abs(scrollY-armedScroll)>24){confirmations.clear();renderList();}const pill=$('back-top'),show=scrollY>=innerHeight*2&&up;clearTimeout(backTopTimer);if(show){pill.hidden=false;pill.classList.remove('fading');}else hideBackTop();requestAnimationFrame(updateShowInList);previousScroll=scrollY;backTopTimer=setTimeout(hideBackTop,1500);},{passive:true});
 window.addEventListener('storage',e=>{if((e.key===storageKey||e.key===null)&&mode==='local'){usage={};localMode();}});
 for(const name of ['city','cuisine']){const sheet=$(name+'-sheet'),head=sheet.querySelector('.utility-head'),body=node('div','picker-body');while(head.nextSibling)body.append(head.nextSibling);sheet.append(body);body.addEventListener('focusin',event=>event.target.scrollIntoView({block:'nearest'}));}
 function layoutPanes(){
@@ -1995,7 +2054,7 @@ window.addEventListener('orientationchange',layoutPanes);
 layoutPanes();
 // Keep background scroll still without invalidating the body or sticky chrome.
 for(const event of ['wheel','touchmove'])document.addEventListener(event,e=>{
- const modal=utility?$(utility+'-sheet'):selected&&!desktop.matches?$('detail'):null;
+ const modal=utility&&(!desktop.matches||utility==='about')?$(utility+'-sheet'):selected&&!desktop.matches?$('detail'):null;
  if(modal&&!modal.contains(e.target))e.preventDefault();
 },{passive:false});
 new IntersectionObserver(entries=>{const scrolled=!entries[0].isIntersecting&&entries[0].boundingClientRect.top<0;$('toolbar').classList.toggle('scrolled',scrolled);}).observe($('sentinel'));
@@ -2210,7 +2269,7 @@ function updateCountLine(count){
  const el=$('result-count'),text=dateIdeas&&dateBudget!=='any'?count+' under $'+dateBudget:filter==='used'?(count?count+' used up':'None used up'):q&&related?(count-related)+' matches'+(place?' in '+place:'')+' · '+related+' related':plural(count,'offer')+(place?' in '+place:'');
  const choose=!locationOrigin()&&!dateIdeas&&$('location-sheet').hidden;
  if(el.dataset.label!==text||el.dataset.choose!==String(choose)){
-  const copy=node('span','count-copy',text);el.replaceChildren(copy);if(choose){copy.append(document.createTextNode(' · '));const button=node('button','text-button inline-city','Choose a city');button.onclick=()=>openUtility('city');copy.append(button);}
+  const copy=node('span','count-copy',text);el.replaceChildren(copy);if(choose){const button=node('button','text-button inline-city','Choose a city');button.onclick=()=>openUtility('city');copy.append(button);}
   el.dataset.label=text;el.dataset.choose=String(choose);
  }
  el.dataset.count=count;
@@ -2555,7 +2614,15 @@ function setupLocation() {
  setInterval(()=>{const before=Boolean(gpsOrigin);renderLocationStatus();if(before&&!freshFix()){updateFilters();renderList();}},60000);
 }
 
-$('toolbar').append($('categories'),$('date-context'));const filterCollapse=node('div','filter-collapse');document.querySelector('.filter-row').before(filterCollapse);filterCollapse.append(document.querySelector('.filter-row'));document.querySelector('.list-heading').after($('location-sheet'));
+// Fixed filter slots keep search, rail and count geometry independent of selected values.
+$('toolbar').append($('categories'));
+const filterRow=document.querySelector('.filter-row'),filterCollapse=node('div','filter-collapse');
+filterRow.before(filterCollapse);filterCollapse.append(filterRow);
+for(const ids of [['cuisine-button','date-day'],['availability-button','date-budget']]){
+ const slot=node('div','filter-slot');$(ids[0]).before(slot);for(const id of ids)slot.append($(id));
+}
+filterRow.append($('clear-filters'));document.querySelector('.list-heading').after($('location-sheet'));
+for(const id of filterTriggers){const trigger=$(id);trigger.dataset.sheetTrigger='';trigger.setAttribute('aria-controls',(['sort-order','date-day','date-budget'].includes(id)?'availability':id.replace('-button',''))+'-sheet');trigger.setAttribute('aria-expanded','false');trigger.onclick=()=>switchMenu(id);}
  document.documentElement.dataset.input='pointer';
  $('show-in-list').onclick=()=>document.querySelector('.deal[data-id="'+selected+'"]')?.scrollIntoView({block:'center',behavior:reduceMotion.matches?'instant':'smooth'});
 setupLocation();
