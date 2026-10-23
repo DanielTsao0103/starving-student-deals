@@ -11,6 +11,7 @@ window.DealsWeb = (() => {
   let initializing = configured, flushing = false, writeProblem = '', readProblem='', liveProblem='', signoutError='', memoryOnly = false, live = false;
   let pendingAction=null, signinRequested=false, resendTimer=null;
   let authMode='signin', authStep='email', authAttempt=null, verifyBusy=false, resendAt=0;
+  let usedBeforeCatchup=false;
   let welcome='', onboarding=false, newAccount=false, mergePending=false, mergeReceipt=null;
   let signoutConfirm=false;
   const RPC_TIMEOUT_MS=config.rpcTimeoutMs??15000;
@@ -92,8 +93,8 @@ window.DealsWeb = (() => {
   function renderAuth() {
     const busy=signInBusy||verifyBusy;
     $('signin-form').hidden=authStep!=='email';$('signin-sent').hidden=authStep!=='code';
-    $('signin-title').hidden=authStep==='code';$('signin-intro').hidden=authStep==='code';
-    setText('signin-intro',pendingAction?.kind==='use'?"Sign in to save this use. It's added as soon as you're in.":'Use your invited email. Each person has a separate card.');
+    $('signin-title').hidden=true;$('signin-intro').hidden=authStep==='code';
+    setText('signin-intro',pendingAction?.kind==='use'?"Invite-only. Use the email Dan added. Sign in to save this use.":'Invite-only. Use the email Dan added.');
     setText('signin-title','Sign in');
     setText('signin-submit',signInBusy?'Sending…':'Email me a code');
     $('signin-submit').disabled=initializing||busy||Date.now()<(emailCooldown.get($('signin-email').value.trim().toLowerCase())||0);
@@ -116,6 +117,7 @@ window.DealsWeb = (() => {
   }
   function authError(message) {
     $('signin-status').dataset.state=message?'error':'';setText('signin-status',authStep==='code'?'':message);setText('code-help',authStep==='code'&&message?message:'The code expires in 10 minutes. Check your newest email.');$('code-help').classList.toggle('auth-error',Boolean(message)&&authStep==='code');
+    $('signin-email').setAttribute('aria-invalid',String(Boolean(message)&&authStep==='email'));
     $('signin-code').setAttribute('aria-invalid',String(Boolean(message)&&authStep==='code'));
   }
   function chooseMode(mode) {
@@ -140,19 +142,19 @@ window.DealsWeb = (() => {
     invites?.visibility(focused);
     // Keep AUTH.md's complete new-account receipt in the live status below.
     // A neutral sheet title avoids announcing the same greeting twice.
-    setText('about-title',authenticating&&authStep==='code'?'Check your email':welcome?(newAccount?'Your card':'Welcome back'):focused?'Account':'Your card');$('about-title').hidden=false;
+    setText('about-title','Your card');$('about-title').hidden=false;
     $('about-sheet').classList.toggle('account-focused',focused);
     document.querySelector('.about-usage').hidden=true;
     $('account-title').hidden=focused;$('account-status').hidden=focused;
-    $('account-privacy').hidden=focused;
+    $('account-privacy').hidden=focused||!user;
     $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
-    setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. '+(user?'Delete them with Delete my account and data below.':'Delete them with Delete my account and data when signed in.'));
+    setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. '+'You can delete all of it with Delete my account and data below.');
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.notes?.length||0),0);
-    const indicator=$('header-sync'),hidden=!configured||navigator.onLine&&!count&&!readProblem;
-    const label=!navigator.onLine?'Offline':count&&writeProblem?'Not syncing · '+count+' saved here':count?(flushing?'Syncing…':count+' waiting'):readProblem?"Couldn't refresh":'';
+    const indicator=$('header-sync'),hidden=!memoryOnly&&(!configured||navigator.onLine&&!count&&!readProblem);
+    const label=memoryOnly?'Not saving on this device':!navigator.onLine?'Offline':count&&writeProblem?'Not syncing · '+count+' saved here':count?(flushing?'Syncing…':count+' waiting'):readProblem?"Couldn't refresh":'';
     if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
-    const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only') :
-      initializing ? 'Connecting to your account…' : !user ? (writeProblem || 'Saved on this device only') :
+    const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only.') :
+      initializing ? 'Connecting to your account…' : !user ? (writeProblem || 'Saved on this device only.') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
       !navigator.onLine ? 'Offline · ' + (count ? count + ' changes waiting to sync' : 'Your saved uses are available') :
       (count&&writeProblem) || readProblem || liveProblem || (count ? 'Syncing ' + count + ' changes…' : live ? 'Synced just now' : 'Saved · Connecting live sync…');
@@ -165,7 +167,7 @@ window.DealsWeb = (() => {
     $('about-sync').textContent = message;
     $('account-email').hidden = !user||Boolean(catchupStep);
     setText('account-email',user?.email||'');
-    $('signout').hidden = !user||focused;
+    $('signout').hidden = !user||focused;$('signout-caption').hidden=!user||focused;
     $('delete-open').hidden=!user||focused;
     $('delete-panel').hidden=!deleteConfirm;
     $('delete-confirm').disabled=deleteBusy;$('delete-cancel').disabled=deleteBusy;
@@ -174,7 +176,7 @@ window.DealsWeb = (() => {
     $('catchup-panel').hidden=!catchupStep;
     $('signin-panel').hidden = !signinRequested || Boolean(user);
     $('signout-help').hidden=!signoutError;setText('signout-help',signoutError);$('signout-confirm').hidden=!signoutConfirm;setText('signout-warning',plural(count,'change')+" haven't synced yet. Signing out removes them from this device.");renderAuth();
-    $('auth-success').hidden=!welcome||mergePending||Boolean(catchupStep);setText('auth-welcome',welcome);if(welcome)$('auth-welcome').after($('account-email'));else $('account-status').after($('account-email'));
+    $('auth-success').hidden=!welcome||mergePending||Boolean(catchupStep);setText('auth-welcome',welcome);if(welcome)$('auth-welcome').after($('account-email'));else $('signin-open').before($('account-email'));
     $('sync-retry').hidden = !configured || !(count&&writeProblem||readProblem);
     $('merge-panel').hidden=!user||!mergePending;
   }
@@ -371,9 +373,8 @@ window.DealsWeb = (() => {
       cooldown();renderAuth();$('signin-code').focus({preventScroll:true});
     }catch(error){
       if(authMode==='signin'&&(error.code==='otp_disabled'||error.code==='user_not_found'||/signups? (?:not allowed|disabled)|user not found/i.test(error.message||''))){
-        // An uninvited address is an account notice, not a failed code entry.
-        authError('');
-        setText('signin-status','This app is invite-only. Ask Dan to add '+email+'.');
+        // Keep the invite rejection beside the email that needs correcting.
+        authError('This app is invite-only. Ask Dan to add '+email+'.');
       }else authError(authErrorMessage(error,false));
     }finally{signInBusy=false;account();}
   }
@@ -441,17 +442,17 @@ window.DealsWeb = (() => {
         outbox[item.id]=queued;
       }
     }
-    mergeReceipt=fingerprint;await persist();localUsage={};remove(localKey);mergePending=false;
+    usedBeforeCatchup=keep&&added>0;mergeReceipt=fingerprint;await persist();localUsage={};remove(localKey);mergePending=false;
     const current=[...offers.keys()].map(currentUsage),uses=current.reduce((sum,row)=>sum+row.used,0),deals=current.filter(row=>row.used>0).length;
     welcome=keep?'Added '+added+' uses from this device. Your card now has '+uses+' uses on '+deals+' deals.':'Your account’s uses are ready on this device.';
     applyPendingUse();
     emit();void flush();
   }
   function replayPending(){if(!pendingAction||loadingUsage||initializing||mergePending||onboarding||!user)return;const action=pendingAction;pendingAction=null;hooks.replay(action);}
-  function applyPendingUse(){if(pendingAction?.kind==='use'){const name=offers.get(pendingAction.id)?.business;replayPending();if(!pendingAction&&name)welcome+='\nMarked used: '+name+'.';}}
+  function applyPendingUse(){if(pendingAction?.kind==='use'){const name=offers.get(pendingAction.id)?.business;replayPending();if(!pendingAction&&name){usedBeforeCatchup=true;welcome+='\nMarked used: '+name+'.';}}}
   function continueAfterSignin() {
     if(mergePending)return;
-    if(newAccount){newAccount=false;welcome='';openCatchup('ask');return;}
+    if(newAccount||usedBeforeCatchup){newAccount=false;usedBeforeCatchup=false;welcome='';openCatchup('ask');return;}
     welcome='';replayPending();account();hooks.closeAccount();
   }
   let catchupStep='',catchupCounts={},catchupUndo=null;
@@ -465,6 +466,7 @@ window.DealsWeb = (() => {
   function finishCatchup(){catchupStep='';catchupCounts={};catchupUndo=null;continueAfterSignin();}
   function beforeCloseAccount(){
     if(deleteBusy)return true;
+    if(!user&&pendingAction?.kind==='use'){pendingAction=null;signinRequested=false;hooks.toast('Not saved. Sign in to mark this used.');}
     if(catchupStep){finishCatchup();return true;}
     deleteConfirm=false;if(welcome||newAccount){welcome='';newAccount=false;replayPending();account();}return false;
   }
@@ -476,7 +478,7 @@ window.DealsWeb = (() => {
   }
   function renderCatchup(){
     $('catchup-ask').hidden=catchupStep!=='ask';$('catchup-picker').hidden=catchupStep!=='pick';
-    setText('catchup-title',catchupStep==='ask'?'Already used some deals on your card?':'Catch up my card');
+    setText('catchup-title',catchupStep==='ask'?'Used any other deals?':'Catch up my card');
     const list=$('catchup-results');list.replaceChildren();
     if(catchupStep!=='pick')return;
     for(const offer of catchupMatches()){
@@ -594,7 +596,7 @@ window.DealsWeb = (() => {
   }
   function init(callbacks) {
     updateCatalog(window.DealsCatalog.current.data.offers);
-    hooks = callbacks;const indicator=document.createElement('button');indicator.type='button';indicator.onclick=showAccount;indicator.id='header-sync';indicator.className='header-sync text-button';indicator.hidden=true;$('about-button').after(indicator);localUsage = readRows(localKey);
+    hooks = callbacks;const indicator=$('header-sync');indicator.onclick=showAccount;localUsage = readRows(localKey);
     if (!configured) rows = {...localUsage};
     invites ||= window.createDealsInvites(account);
     authMode='signin';$('signin-email').value=knownEmail();
@@ -619,12 +621,13 @@ window.DealsWeb = (() => {
     $('not-you').onclick=()=>{remove('deals-known-email');$('signin-email').value='';renderAuth();$('signin-email').focus({preventScroll:true});};
     $('different-email').onclick=()=>{chooseMode(authMode);$('signin-code').value='';paintCode();$('signin-email').focus({preventScroll:true});};
     $('resend').onclick=sendCode;
-    const install=document.createElement('div');install.className='install-row';install.innerHTML='<button class="summary-row" aria-expanded="false">Add to Home Screen <svg viewBox="0 0 24 24" aria-hidden="true" class="install-chevron icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button><p hidden>On iPhone, use Safari’s Share menu, then Add to Home Screen. You’ll sign in once inside the app. On a laptop, use your browser’s install button.</p>';install.querySelector('button').onclick=()=>{const button=install.querySelector('button'),open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));install.querySelector('p').hidden=!open;};
-    install.hidden=matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;document.querySelector('.about-lines').after(install);
+    const install=document.querySelector('.install-row');install.hidden=matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;
     if(!install.hidden&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&/Safari/.test(navigator.userAgent)&&!read('deals-install-dismissed',false)){const hint=document.createElement('div');hint.className='install-hint';hint.append(document.createTextNode('Add to Home Screen from Share for offline use'));const close=document.createElement('button');close.className='text-button';close.textContent='Dismiss';close.onclick=()=>{store('deals-install-dismissed',true);hint.remove();};hint.append(close);$('results').before(hint);}
 
     $('merge-keep').onclick = () => void mergeLocal(true);
-    $('merge-skip').onclick = () => void mergeLocal(false);
+    $('merge-skip').onclick=()=>{setText('merge-skip-question','Skip '+differences().reduce((n,item)=>n+item.delta,0)+' uses on this device?');$('merge-skip-confirm').hidden=false;};
+    $('merge-skip-cancel').onclick=()=>{$('merge-skip-confirm').hidden=true;};
+    $('merge-skip-yes').onclick=()=>{$('merge-skip-confirm').hidden=true;void mergeLocal(false);};
     $('sync-retry').onclick = () => {clearTimeout(syncRetryTimer);retryDelay=15000;if(retryReason!=='P0001')retryNotBefore=0; writeProblem = '';readProblem=''; if (!client || !user) void connect(); else void refresh().then(flush); };
     const pendingCount=()=>Object.values(outbox).reduce((n,item)=>n+item.deltas.length+item.notes.length,0);
     const signout=async(force=false)=>{
