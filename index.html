@@ -755,7 +755,7 @@ body::after{content:none}
 .heading h1{width:fit-content;background:var(--field-top);border-radius:var(--radius-pill);padding:2px 8px;margin-left:-8px}
 .distance-band[data-band="4"],.unconfirmed-heading{border-top:var(--hairline) solid var(--line);padding-top:8px;margin-top:40px;color:var(--text);font-size:var(--type-caption);font-weight:600}
 .unconfirmed-caption{display:flex;margin-top:4px;margin-bottom:8px;color:var(--muted)}
-.toolbar::before{content:'';position:absolute;top:0;bottom:0;left:calc((100% - 100vw)/2);width:100vw;z-index:-1;pointer-events:none;background:var(--bar);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%)}
+.toolbar::before{content:'';position:absolute;top:-16px;bottom:-24px;left:calc((100% - 100vw)/2);width:100vw;z-index:-1;pointer-events:none;background:var(--bar);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);mask-image:linear-gradient(transparent,#fff 16px,#fff calc(100% - 24px),transparent)}
 @supports (animation-timeline:scroll()){
   .toolbar::before{animation:toolbar-frost linear both;animation-timeline:scroll(root);animation-range:0 120px}
   @keyframes toolbar-frost{
@@ -820,8 +820,21 @@ body::after{content:none}
 }
 
 /* R14: one owner per component; state variants live beside their base rule. */
-.list-heading{container-type:inline-size;display:flex;align-items:center;gap:8px;min-height:44px;height:44px;width:100%;margin:0 0 12px}
-.list-heading #result-count{display:block;flex:1;min-width:0;white-space:nowrap;overflow:visible;font-size:var(--type-caption);line-height:24px}
+/* Availability labels share a width, so switching to Everything never resizes Search. */
+.toolbar #availability-button{width:116px;flex-shrink:0!important;justify-content:center}
+/* Reserve the trailing sort track independently of count, empty state and Clear filters. */
+.list-heading{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr) auto 136px;align-items:center;gap:8px;min-height:44px;height:44px;width:100%;margin:0 0 12px}
+.list-heading .sort-label{grid-column:3;grid-row:1;width:136px;margin:0;justify-self:end}
+.list-heading #sort-order{display:inline-flex;align-items:center;gap:8px;width:100%;justify-content:center}
+#sort-order .icon-arrows-sort{width:1.125rem;height:1.125rem;flex-shrink:0}
+.list-heading #clear-filters{grid-column:2;grid-row:1;margin:0}
+/* Only the text capsule is opaque; stretching the answer must not create a slab. */
+.list-heading .count-copy{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;background:var(--field-top);border-radius:var(--radius-pill);padding:2px 8px}
+.list-heading .count-copy:has(.inline-city){padding-block:0}
+@container (max-width:480px){.list-heading .sort-label{width:44px}#sort-order>span{display:none}}
+@media(max-width:899px),(max-height:559px),(pointer:coarse){.list-heading{grid-template-columns:minmax(0,1fr) auto 44px}.list-heading .sort-label{width:44px}}
+
+.list-heading #result-count{grid-column:1;grid-row:1;display:block;width:auto;min-width:0;white-space:nowrap;overflow:hidden;font-size:var(--type-caption);line-height:24px;background:transparent;padding:0;margin-left:-8px}
 .inline-city{display:inline-flex;white-space:nowrap}
 @container (max-width:360px){#sort-order>span{display:none}#sort-order{min-width:44px;width:44px;padding:0;justify-content:center}}
 #results>.merchant:first-child,#results>.section-label:first-child{margin-top:0}
@@ -888,11 +901,11 @@ body::after{content:none}
 .backdrop{position:fixed;inset:0;background:var(--overlay);z-index:19;opacity:var(--scrim-progress,1);visibility:hidden;pointer-events:none}
 body:has(#app[data-sheet]:not([data-sheet=""]),.detail.closing,.utility.closing:not(#location-sheet))>.backdrop{visibility:visible;pointer-events:auto}
 /* Receding chrome dissolves into the field; control outlines stay legible. */
-#app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,#result-count,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync,.search,.pill,#sort-order,.card-mark){background:transparent}
+#app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync,.search,.pill,#sort-order,.card-mark){background:transparent}
 #app[data-sheet]:not([data-sheet=""]) .toolbar::before{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;animation:none}
 #app[data-sheet]:not([data-sheet=""]) .toolbar::after{background:transparent;border:0}
 @media(max-width:899px),(max-height:559px),(pointer:coarse){
- #app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,#result-count,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync){background:color-mix(in srgb,var(--field-top) calc((1 - var(--sheet-progress,0)) * 100%),transparent)}
+ #app[data-sheet]:not([data-sheet=""]) :is(.heading h1,.card-summary,.count-copy,.section-label,.section-subtitle,.top-pick,.correction,#clear-filters,#location-reference,#header-sync){background:color-mix(in srgb,var(--field-top) calc((1 - var(--sheet-progress,0)) * 100%),transparent)}
 }
 @media(min-width:900px) and (min-height:560px) and (hover:hover) and (pointer:fine){
  #location-sheet{position:relative;inset:auto;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:12px;row-gap:0;padding:12px 16px;margin:0 0 12px;border-radius:12px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -905,7 +918,8 @@ body:has(#app[data-sheet]:not([data-sheet=""]),.detail.closing,.utility.closing:
  #location-sheet .location-choices>*{font-size:.8125rem;width:auto;min-height:36px;height:36px;flex:none}
  #location-sheet :is(#location-help,#location-other-device,#location-progress){display:none}
  .backdrop{background:transparent}
- .toolbar::after{content:'';position:absolute;left:calc((100% - 100vw)/2);width:100vw;top:100%;height:12px;border-top:.5px solid color-mix(in srgb,var(--line) 50%,transparent);background:linear-gradient(var(--bar),transparent);pointer-events:none;z-index:-1}
+ /* The single full-viewport material fades out below the controls; no straight divider. */
+ .toolbar::after{content:none}
  #about-sheet>.handle{display:none}
 }
 @media(prefers-reduced-motion:reduce){
@@ -1267,7 +1281,7 @@ const cuisineV2 = await import('./cuisine-v2.js');
 let cuisineRegions = initialCatalog.cuisineRegions;
 let data = initialCatalog.data;
 const $ = id => document.getElementById(id);
-const icons = {"credit-card": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-credit-card\">\n  <path d=\"M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z\" />\n  <path d=\"M3 10l18 0\" />\n  <path d=\"M7 15l.01 0\" />\n  <path d=\"M11 15l2 0\" /></svg>", "search": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-search\">\n  <path d=\"M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" />\n  <path d=\"M21 21l-6 -6\" /></svg>", "x": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-x\">\n  <path d=\"M18 6l-12 12\" />\n  <path d=\"M6 6l12 12\" /></svg>", "chevron-down": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-down\">\n  <path d=\"M6 9l6 6l6 -6\" /></svg>", "map-pin": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-map-pin\">\n  <path d=\"M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" />\n  <path d=\"M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z\" /></svg>", "circle-check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-circle-check\">\n  <path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" />\n  <path d=\"M9 12l2 2l4 -4\" /></svg>", "check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-check\">\n  <path d=\"M5 12l5 5l10 -10\" /></svg>", "plus": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-plus\">\n  <path d=\"M12 5l0 14\" />\n  <path d=\"M5 12l14 0\" /></svg>", "mail": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-mail\">\n  <path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z\" />\n  <path d=\"M3 7l9 6l9 -6\" /></svg>", "navigation": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-navigation\">\n  <path d=\"M12 18.5l7.265 2.463c.196 .077 .42 .032 .57 -.116a.548 .548 0 0 0 .134 -.572l-7.969 -17.275l-7.97 17.275c-.07 .2 -.017 .424 .135 .572c.15 .148 .374 .193 .57 .116l7.265 -2.463\" /></svg>", "chevron-right": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-right\">\n  <path d=\"M9 6l6 6l-6 6\" /></svg>"};
+const icons = {"credit-card": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-credit-card\">\n  <path d=\"M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z\" />\n  <path d=\"M3 10l18 0\" />\n  <path d=\"M7 15l.01 0\" />\n  <path d=\"M11 15l2 0\" /></svg>", "search": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-search\">\n  <path d=\"M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" />\n  <path d=\"M21 21l-6 -6\" /></svg>", "x": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-x\">\n  <path d=\"M18 6l-12 12\" />\n  <path d=\"M6 6l12 12\" /></svg>", "chevron-down": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-down\">\n  <path d=\"M6 9l6 6l6 -6\" /></svg>", "map-pin": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-map-pin\">\n  <path d=\"M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" />\n  <path d=\"M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z\" /></svg>", "circle-check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-circle-check\">\n  <path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" />\n  <path d=\"M9 12l2 2l4 -4\" /></svg>", "check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-check\">\n  <path d=\"M5 12l5 5l10 -10\" /></svg>", "plus": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-plus\">\n  <path d=\"M12 5l0 14\" />\n  <path d=\"M5 12l14 0\" /></svg>", "mail": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-mail\">\n  <path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z\" />\n  <path d=\"M3 7l9 6l9 -6\" /></svg>", "navigation": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-navigation\">\n  <path d=\"M12 18.5l7.265 2.463c.196 .077 .42 .032 .57 -.116a.548 .548 0 0 0 .134 -.572l-7.969 -17.275l-7.97 17.275c-.07 .2 -.017 .424 .135 .572c.15 .148 .374 .193 .57 .116l7.265 -2.463\" /></svg>", "chevron-right": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-right\">\n  <path d=\"M9 6l6 6l-6 6\" /></svg>", "arrows-sort": "<svg class=\"icon icon-arrows-sort\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9l4 -4l4 4m-4 -4v14\"/><path d=\"M21 15l-4 4l-4 -4m4 4v-14\"/></svg>"};
 function glyph(name){const holder=document.createElement('span');holder.innerHTML=icons[name];return holder.firstElementChild;}
 const CARD_INFO_IDS = new Set(["F029", "H037"]);
 let dealOffers = data.offers.filter(o => !CARD_INFO_IDS.has(o.id));
@@ -1490,7 +1504,7 @@ function setText(el,value){value=displayCopy(value);if(el.textContent!==value)el
 function setAttr(el,name,value){if(value===null){if(el.hasAttribute(name))el.removeAttribute(name);}else if(el.getAttribute(name)!==String(value))el.setAttribute(name,String(value));}
 function setFlag(el,name,value){if(el[name]!==value)el[name]=value;}
 function setClass(el,name,value){if(el.classList.contains(name)!==value)el.classList.toggle(name,value);}
-function buttonLabel(id,label,leading=false){const button=$(id);if(button.dataset.label===label)return;button.dataset.label=label;button.replaceChildren(...(leading?[pin()]:[]),node('span','',label),chevron());}
+function buttonLabel(id,label,leading=false){const button=$(id);if(button.dataset.label===label)return;button.dataset.label=label;button.replaceChildren(...(leading?[pin()]:[]),node('span','',label),id==='sort-order'?glyph('arrows-sort'):chevron());}
 // Reconcile a detached description against the live keyed tree. Row wrappers are
 // keyed by immutable offer ID, so filtering/ranking preserves their DOM identity.
 function reconcileChildren(parent,description,pool=new Map([...parent.querySelectorAll('[data-key]')].map(el=>[el.dataset.key,el]))){
@@ -1710,7 +1724,7 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;cu
  const secondaryLabel=o=>query?'':cuisineV2.secondaryCuisine(cuisineData.get(o.business),cuisine,query);const secondaryOffers=visible.filter(o=>secondaryLabel(o));const fragment=document.createDocumentFragment(),open=visible.filter(o=>!secondaryLabel(o)&&!closed(o)&&o.id!==topId),closedOffers=visible.filter(o=>!secondaryLabel(o)&&closed(o)),groups=[0,1,2,3].map(i=>open.filter(o=>section(o)===i));
  const sectionCounts=groups.map(group=>group.filter(o=>filter!=='available'||left(o)!==0).length);
 
- if(dateIdeas&&dateBudget!=='any')fragment.append(datePair(ranked.filter(r=>visible.includes(r.offer))));
+ if(visible.length&&dateIdeas&&dateBudget!=='any')fragment.append(datePair(ranked.filter(r=>visible.includes(r.offer))));
  let firstBandSeen=false;
  function appendGroup(group,index,target=fragment){if(!group.length)return;if(!rankingActive&&(!q||city!=='All')&&index!==4&&!(index===0&&city==='All'&&!q)){const h=node('h3','section-label',[city==='All'?'At a specific branch':'In '+city,'Any branch or area','Call first','Location unknown'][index]);if(index!==groups.findIndex(group=>group.length))h.append(node('span','count',sectionCounts[index]));target.append(h);if(index===1)target.append(node('p','section-subtitle','Honored across the area shown on each row.'));if(index===2)target.append(node('p','section-subtitle','Participation varies by branch. Ask at the counter before you order.'));}
  const merchants=new Map();for(const o of group){const band=sortMode==='fewest'?(left(o)??'unlimited'):!nearby&&dateIdeas?Number(notNow(o))*2+Number(!offerTiming(o,contextDate(),{atTime:dateIdeas}).validToday):'';const key=band+'|'+o.business;if(!merchants.has(key))merchants.set(key,[]);merchants.get(key).push(o);}
@@ -1748,7 +1762,7 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;cu
  if(closedOffers.length){const toggle=node('button','text-button closed-toggle','Closed ('+closedOffers.length+')');toggle.prepend(glyph(closedExpanded?'chevron-down':'chevron-right'));toggle.setAttribute('aria-expanded',String(closedExpanded));toggle.setAttribute('aria-controls','closed-offers');toggle.onclick=()=>{closedExpanded=!closedExpanded;renderList();};fragment.append(toggle);const container=node('div');container.id='closed-offers';container.hidden=!closedExpanded;appendGroup(closedOffers,4,container);fragment.append(container);}
  if(unavailable.length){const toggle=node('button','text-button closed-toggle','Not available '+dateDay+' ('+unavailable.length+')');toggle.prepend(glyph(unavailableExpanded?'chevron-down':'chevron-right'));toggle.setAttribute('aria-expanded',String(unavailableExpanded));toggle.setAttribute('aria-controls','unavailable-offers');toggle.onclick=()=>{unavailableExpanded=!unavailableExpanded;renderList();};fragment.append(toggle);const container=node('div');container.id='unavailable-offers';container.hidden=!unavailableExpanded;appendGroup(unavailable,4,container);fragment.append(container);}
  if(overBudget.length){const group=node('details','budget-over');group.dataset.key='over-budget';const summary=node('summary','text-button','Over $'+dateBudget+' ('+overBudget.length+')');summary.prepend(glyph('chevron-right'));group.append(summary);fragment.append(group);appendGroup(overBudget,8,group);}
- if(!visible.length&&!unavailable.length)fragment.append(buildEmptyState());
+ if(!visible.length)fragment.prepend(buildEmptyState());
  setFlag($('clear-filters'),'hidden',!visible.length||category==='All'&&cuisine==='All'&&!dateIdeas&&!summaryView&&!query&&!freeOnly);
  const hydrate=job=>{const fresh=job.build(),staging=node('div');if(job.deferred)fresh.querySelectorAll('.merchant').forEach(card=>card.classList.add('deferred-card'));reconcileChildren(staging,fresh,pool);const live=$('results').querySelector('[data-key="'+job.placeholder.dataset.key+'"]')||job.placeholder;live.replaceWith(...staging.childNodes);};
  let next=0,rowsBuilt=0;while(next<jobs.length&&(rowsBuilt<40||!next)){const job=jobs[next++];hydrate(job);rowsBuilt+=job.size;}
@@ -1757,30 +1771,32 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;cu
  $('results').dataset.renderComplete=String(next===jobs.length);if(next<jobs.length)requestAnimationFrame(appendChunk);
  observeMeta();document.querySelector('.workspace').classList.toggle('empty-workspace',!visible.length&&!selected);$('detail').hidden=!selected;setFlag($('detail-placeholder'),'hidden',!visible.length||Boolean(selected));const firstRow=$('results').querySelector('.deal-main');if(firstRow&&!$('results').querySelector('.deal-main[tabindex="0"]'))setAttr(firstRow,'tabindex',0);if(desktop.matches&&(userDriven||!selected)){const rows=[...$('results').querySelectorAll('.deal-main')].filter(el=>!el.closest('[hidden]'));if(userDriven&&selected){flushNote();hideDetail();}if(!paneDismissed&&!selected&&rows.length)openDetail(rows[0].dataset.offerId,rows[0],true);} if(focusId){const target=document.querySelector((quickFocus?'.quick-use':'.deal-main')+'[data-offer-id="'+focusId+'"]');if(target)returnTo(target);else if(!selected)returnTo(rowAt(oldIndex));}
 }
-function buildEmptyState(){const {base,hiddenMatches}=matchingOffers(),q=normalize(query).slice(0,60),shownQuery=query.length>60?query.slice(0,60)+'…':query;
- if(query.trim()&&!q){const empty=node('div','empty');empty.append(node('h3','','No offers match "'+shownQuery+'".'),node('p','','Try a word like "pizza".'));const clear=node('button','text-button suggestion','Clear search');clear.onclick=()=>setQuery('');empty.append(clear);return empty;}
- if(filter==='used'&&!dealOffers.some(o=>!closed(o)&&state(o.id).used>0&&left(o)===0)){
-  const empty=node('div','empty usage-empty');empty.append(node('h3','','Nothing used up yet'),node('p','','Offers you mark used appear here.'));
-  const show=node('button','tinted-button','Show available offers');show.onclick=()=>chooseAvailability('available');empty.append(show);
-  if(q){const clear=node('button','text-button suggestion','Clear search');clear.onclick=()=>setQuery('');empty.append(clear);}return empty;
+function buildEmptyState(){
+ const {hiddenMatches}=matchingOffers(),q=normalize(query),shownQuery=query.length>60?query.slice(0,60)+'…':query;
+ const empty=node('div','empty usage-empty');
+ // Exactly one recovery action. Prefer the narrowest filter that restores results.
+ const compose=(title,copy,label,action)=>{empty.append(node('h3','',title),node('p','',copy));const button=node('button','tinted-button',label);button.onclick=action;empty.append(button);return empty;};
+ if(filter==='used'&&!dealOffers.some(o=>!closed(o)&&left(o)===0)){
+  return compose('Nothing used up yet','Deals you mark used show up here.','Show available',()=>chooseAvailability('available'));
  }
-
-  const narrow=cuisine!=='All'?cuisine:category!=='All'?shortCategory(category):city!=='All'?city:dateIdeas?'Date ideas':null,allCount=countWithoutNarrowFilter();const filterHidden=Boolean(q&&narrow&&allCount>0);
-  const empty=node('div','empty usage-empty'),icon=node('span','empty-icon');
-  icon.innerHTML=q?'<svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-search"> <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M21 21l-6 -6" /></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-circle-check"> <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M9 12l2 2l4 -4" /></svg>';
-  empty.append(icon,node('h3','',filterHidden?'No '+shownQuery+' in '+narrow+'.':q?(filter==='used'?'No used offers match "':'No available offers match "')+shownQuery+'"':filter==='used'?(category==='All'?'Nothing used up yet':'No used offers in '+shortCategory(category)):filter==='available'&&hiddenMatches.length?'No available offers':'No offers match these filters'));
-  const elsewhere=filter==='used'&&q&&base.some(o=>!availability(o)&&normalize(o.business).includes(q));
-  if(filterHidden){empty.append(node('p','',plural(allCount,query+' offer')+' with that filter cleared.'));const clear=node('button','tinted-button','Clear '+narrow);clear.onclick=clearNarrowFilter;empty.append(clear);}
-  else if(elsewhere||(hiddenMatches.length&&filter==='available')){
-   empty.append(node('p','',elsewhere?'This merchant has offers in Everything.':hiddenMatches.every(closed)?'The '+hiddenMatches.length+' '+[...new Set(hiddenMatches.map(o=>o.business))].join(', ')+' offers are at closed locations.':hiddenMatches.length+' matching '+(hiddenMatches.length===1?'offer is':'offers are')+' used up or closed.'));
-   const show=node('button','tinted-button suggestion',elsewhere?'Search all offers':'Show them');show.onclick=()=>{endFeedback();filter='all';searchShowAll=true;closedExpanded=true;updateAvailability();renderList(true);};empty.append(show);
-  }else if(q){
-   empty.append(node('p','','Check the spelling or try a merchant, city, category or cuisine.'));
-   const first=q.split(' ')[0],nearest=[...new Set(dealOffers.map(o=>o.business))].map(name=>({name,normalized:normalize(name),score:distance(q,normalize(name))})).filter(c=>(c.score<=Math.max(1,Math.ceil(.4*q.length))&&q.split(' ').every(token=>c.normalized.split(' ').some(word=>distance(token,word)<=Math.max(1,Math.floor(.3*token.length)))))||(first.length>=3&&c.normalized.startsWith(first))).sort((a,b)=>a.score-b.score||a.name.localeCompare(b.name))[0];
-   if(q.split(' ').length===1&&nearest&&nearest.normalized!==q){const suggest=node('button','text-button suggestion','Did you mean '+nearest.name+'?');suggest.onclick=()=>setQuery(nearest.name);empty.append(suggest);}
-   if(q.split(' ').length>1){const terms=q.split(' '),counts=new Map(),countFor=value=>{if(!counts.has(value))counts.set(value,base.filter(o=>availability(o)&&!notNow(o)&&matchesQuery(o,value)).length);return counts.get(value);},best=[...new Set(terms)].sort((a,b)=>countFor(b)-countFor(a))[0];for(const value of [...new Set([terms.slice(0,-1).join(' '),best])].filter(v=>countFor(v)>0).slice(0,2)){const suggest=node('button','text-button suggestion','Try "'+value+'" ('+countFor(value)+')');suggest.onclick=()=>setQuery(value);empty.append(suggest);}}
-  }else if(filter==='used'){empty.append(node('p','','Offers you mark used appear here.'));const available=node('button','tinted-button','Show available offers');available.onclick=()=>chooseAvailability('available');empty.append(available);}
-  if(q){const clear=node('button','text-button suggestion','Clear search');clear.onclick=()=>setQuery('');empty.append(clear);}else if(city!=='All'||category!=='All'||cuisine!=='All'){const reset=node('button','tinted-button suggestion','Clear filters');reset.onclick=resetFilters;empty.append(reset);}return empty;
+ const choices=emptyFilterChoices(),recovery=choices.find(choice=>countAfterClearing(choice)>0);
+ if(recovery){
+  const count=countAfterClearing(recovery),across=queryAcrossAll();
+  return compose(q?'No "'+shownQuery+'" with '+recovery.name:'No offers with '+recovery.name,
+   q?plural(across,'matching offer')+' across all offers; '+count+' with '+recovery.name+' cleared.':plural(count,'offer')+' with '+recovery.name+' cleared.',
+   recovery.label,()=>clearEmptyFilter(recovery));
+ }
+ if(hiddenMatches.length){
+  return compose(filter==='used'?'No used-up offers'+(q?' matching "'+shownQuery+'"':''):'No available offers'+(q?' matching "'+shownQuery+'"':''),
+   plural(hiddenMatches.length,'matching offer')+' in Everything.','Show everything',()=>{endFeedback();filter='all';searchShowAll=true;closedExpanded=true;updateAvailability();renderList(true);});
+ }
+ if(choices.length){const choice=choices[0];
+  return compose('No offers with '+choice.name,(q?plural(queryAcrossAll(),'matching offer')+' across all offers. ':'')+'Try clearing '+choice.name+'.',choice.label,()=>clearEmptyFilter(choice));
+ }
+ if(query.trim())return compose('No offers match "'+shownQuery+'"','Try a merchant, city, category or cuisine.','Clear search',()=>setQuery(''));
+ if(filter==='used')return compose('No used-up offers'+(city!=='All'?' in '+city:''),'Deals you mark used show up here.','Show available',()=>chooseAvailability('available'));
+ if(city!=='All')return compose('No offers in '+city,'Choose another city to see its offers.','Choose a city',()=>openUtility('city'));
+ return compose('No offers to show','Try browsing all offers.','Show everything',()=>chooseAvailability('all'));
 }
 function updateAvailability(){setAttr($('availability-button'),'aria-pressed',String(filter!=='available'));buttonLabel('availability-button',({available:'Available',used:'Used up',all:'Everything'}[filter]));setAttr($('availability-button'),'aria-label','Availability: '+({available:'Available',used:'Used up',all:'Everything'}[filter]));for(const b of $('availability').children)setAttr(b,'aria-pressed',String(b.dataset.filter===filter));}
 
@@ -1995,7 +2011,7 @@ async function connect(){
    onUsage(next){const ids=[...offers.keys()].filter(id=>(usage[id]?.used||0)!==(next[id]?.used||0)||window.DealsWeb?.notice(id));const first=!usageReceived;usageReceived=true;usage=next;if(first&&ids.length)renderList();else ids.forEach(patchUsage);updateDetail();if(!$('about-sheet').hidden)renderCardProgress();},
    onReset(){usageReceived=false;if(utility==='about'){stopSheet($('about-sheet'));$('about-sheet').hidden=true;utility=null;applyModal();}clearTimeout(noteTimer);noteDrafts.clear();useLocks.clear();endFeedback();dismissToast();feedback=null;lastDetailUse=null;$('notes').value='';$('usage-history').hidden=true;$('usage-history').textContent='';if(selected)hideDetail();},
    toast(message){showStatusToast(message);},
-   saveFailure:setSaveFailure,
+   saveFailure:failed=>setSaveFailure(failed,false),
    announce,
    showAccount(){if(utility&&utility!=='about')closeUtility();openUtility('about');document.querySelector('.account')?.scrollIntoView({block:'start'});},
    replay(action){if(action.kind==='use')markUse(action.id,true);else if(action.kind==='note')save(action.id,{...state(action.id),note:action.note});},
@@ -2194,13 +2210,33 @@ function updateCountLine(count){
  const el=$('result-count'),text=dateIdeas&&dateBudget!=='any'?count+' under $'+dateBudget:filter==='used'?(count?count+' used up':'None used up'):q&&related?(count-related)+' matches'+(place?' in '+place:'')+' · '+related+' related':plural(count,'offer')+(place?' in '+place:'');
  const choose=!locationOrigin()&&!dateIdeas&&$('location-sheet').hidden;
  if(el.dataset.label!==text||el.dataset.choose!==String(choose)){
-  el.replaceChildren(document.createTextNode(text));if(choose){el.append(document.createTextNode(' · '));const button=node('button','text-button inline-city','Choose a city');button.onclick=()=>openUtility('city');el.append(button);}
+  const copy=node('span','count-copy',text);el.replaceChildren(copy);if(choose){copy.append(document.createTextNode(' · '));const button=node('button','text-button inline-city','Choose a city');button.onclick=()=>openUtility('city');copy.append(button);}
   el.dataset.label=text;el.dataset.choose=String(choose);
  }
  el.dataset.count=count;
 }
-function countWithoutNarrowFilter(){const saved={city,category,cuisine,dateIdeas};if(cuisine!=='All')cuisine='All';else if(category!=='All')category='All';else if(city!=='All')city='All';else dateIdeas=false;const count=matchingOffers().visible.length;({city,category,cuisine,dateIdeas}=saved);return count;}
-function clearNarrowFilter(){if(cuisine!=='All')cuisine='All';else if(category!=='All')category='All';else if(city!=='All'){city='All';rememberCity('All');}else dateIdeas=false;persistFilters();updateFilters();renderList(true);}
+/** Empty-state probes never persist changes or clear the user's chosen place. */
+function emptyResultCount(){
+ const visible=matchingOffers().visible;
+ if(!dateIdeas)return visible.length;
+ return visible.filter(o=>!notNow(o)&&offerTiming(o,contextDate(),{atTime:true}).validToday&&(dateBudget==='any'||dateCost({offer:o,oop:Math.max(0,Number(valueData[o.id]?.outOfPocketUSD)||0)})<=Number(dateBudget))).length;
+}
+function emptyFilterChoices(){
+ const choices=[];
+ if(cuisine!=='All')choices.push({name:cuisine,label:'Clear '+cuisine,clear:()=>{cuisine='All';}});
+ if(category!=='All')choices.push({name:shortCategory(category),label:'Clear '+shortCategory(category),clear:()=>{category='All';}});
+ if(dateIdeas&&dateBudget!=='any')choices.push({name:menuLabel('budget',dateBudget),label:'Any budget',clear:()=>{dateBudget='any';freeOnly=false;}});
+ if(dateIdeas&&dateDay!=='Today')choices.push({name:menuLabel('day',dateDay),label:'Show today',clear:()=>{dateDay='Today';}});
+ if(summaryView)choices.push({name:({started:'Partly used',low:'Last use',new:'Not tried yet'})[summaryView],label:'Show all offers',clear:()=>{summaryView=null;}});
+ if(dateIdeas)choices.push({name:'Date ideas',label:'Show all categories',clear:()=>{dateIdeas=false;dateBudget='any';dateDay='Today';freeOnly=false;}});
+ return choices;
+}
+function countAfterClearing(choice){
+ const saved={category,cuisine,dateIdeas,dateBudget,dateDay,freeOnly,summaryView};
+ try{choice.clear();return emptyResultCount();}
+ finally{({category,cuisine,dateIdeas,dateBudget,dateDay,freeOnly,summaryView}=saved);}
+}
+function clearEmptyFilter(choice){endFeedback();choice.clear();persistFilters();updateFilters();renderList(true);}
 function renderUsageEmpty(){$('results').replaceChildren(buildEmptyState());setFlag($('clear-filters'),'hidden',true);}
 function renderPopularCuisines(){
  let row=$('popular-cuisines');if(!row){row=node('div','popular-cuisines');row.id='popular-cuisines';$('cuisine-sheet').querySelector('.search').before(row);}
@@ -2209,8 +2245,10 @@ function renderPopularCuisines(){
  for(const label of ['Mexican','Pizza','Burgers','Asian','Desserts & Ice Cream']){const value=label==='Asian'?'Asian Fusion':label;if(!offerCount(city,value))continue;const chip=node('button','pill',label);chip.onclick=()=>{window.scrollTo({top:0,behavior:'instant'});endFeedback();cuisine=value;resetNearbySort();persistFilters();updateFilters();renderList(true);closeUtility();};chips.append(chip);}row.append(chips);
 }
 let saveFailed=false,statusToast=false,saveFailureTimer=null;
-function setSaveFailure(failed){
- setFlag($('header-sync'),'hidden',!failed);setClass($('header-sync'),'not-saved',failed);setText($('header-sync'),failed?'Not saving on this device':'');
+function setSaveFailure(failed,ownsIndicator=true){
+ // The web adapter owns its sync badge; this shared hook still owns storage toasts.
+ if(ownsIndicator){setFlag($('header-sync'),'hidden',!failed);setText($('header-sync'),failed?'Not saving on this device':'');}
+ setClass($('header-sync'),'not-saved',failed);
  if(failed){saveFailed=true;$('list-toast').setAttribute('role','alert');clearTimeout(toastTimer);undoAction=null;statusToast=false;$('list-toast-text').textContent="Can't save on this device. Uses will be lost when you close this tab.";$('list-toast-business').textContent='';$('list-undo').hidden=true;$('list-toast').hidden=false;$('list-toast').classList.add('show','save-failure');toastSpace();clearTimeout(saveFailureTimer);saveFailureTimer=setTimeout(()=>{$('list-toast').hidden=true;$('list-toast').classList.remove('show');toastSpace();},6000);}
  else if(saveFailed){saveFailed=false;$('list-toast').removeAttribute('role');$('list-toast').classList.remove('save-failure');dismissToast();}
 }

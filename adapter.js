@@ -6,7 +6,7 @@ window.DealsWeb = (() => {
   const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
   const localKey = 'deals-web-local-v1';
   let hooks, client, user = null, channel, rows = {}, outbox = {}, epoch = 0;
-  let loadingUsage = false, lastSynced=0;
+  let loadingUsage = false, lastSynced=0, refreshRevision=0;
   let retryDelay=15000;
   let initializing = configured, flushing = false, writeProblem = '', readProblem='', liveProblem='', signoutError='', memoryOnly = false, live = false;
   let pendingAction=null, signinRequested=false, resendTimer=null;
@@ -50,8 +50,8 @@ window.DealsWeb = (() => {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
   }
   function store(key, value) {
-    try { const encoded=JSON.stringify(value);if(localStorage.getItem(key)!==encoded)localStorage.setItem(key,encoded); memoryOnly=false;hooks?.saveFailure?.(false);return true; }
-    catch { memoryOnly = true;hooks?.saveFailure?.(true);return false; }
+    try { const encoded=JSON.stringify(value);if(localStorage.getItem(key)!==encoded)localStorage.setItem(key,encoded); memoryOnly=false;hooks?.saveFailure?.(false);renderSyncIndicator();return true; }
+    catch { memoryOnly = true;hooks?.saveFailure?.(true);renderSyncIndicator();return false; }
   }
   function accountKey(id = user?.id) { return 'deals-web-account-v1:' + id; }
   async function persist() {
@@ -135,6 +135,13 @@ window.DealsWeb = (() => {
     for (const [id, item] of Object.entries(outbox)) next[id] = optimistic(id,item);
     hooks.onUsage(next); account();
   }
+  /** One owner derives the badge from storage, the real outbox and the latest read. */
+  function renderSyncIndicator(count=Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.notes?.length||0),0)) {
+    if(!hooks)return;
+    const indicator=$('header-sync'),hidden=!memoryOnly&&(!configured||navigator.onLine&&!count&&!readProblem);
+    const label=memoryOnly?'Not saving on this device':!navigator.onLine?'Offline':count&&writeProblem?'Not syncing · '+count+' saved here':count?(flushing?'Syncing…':count+' waiting'):readProblem?"Couldn't refresh":'';
+    if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
+  }
   function account() {
     if (!hooks) return;
     hooks.onLoading(initializing || loadingUsage);
@@ -150,9 +157,7 @@ window.DealsWeb = (() => {
     $('signin-open').hidden=Boolean(user)||signinRequested||!configured;
     setText('account-privacy','We store your email, uses, notes and settings, never your location coordinates. '+'You can delete all of it with Delete my account and data below.');
     const count = Object.values(outbox).reduce((sum,item)=>sum+(item.deltas?.length||0)+(item.notes?.length||0),0);
-    const indicator=$('header-sync'),hidden=!memoryOnly&&(!configured||navigator.onLine&&!count&&!readProblem);
-    const label=memoryOnly?'Not saving on this device':!navigator.onLine?'Offline':count&&writeProblem?'Not syncing · '+count+' saved here':count?(flushing?'Syncing…':count+' waiting'):readProblem?"Couldn't refresh":'';
-    if(indicator.hidden!==hidden)indicator.hidden=hidden;if(indicator.textContent!==label)indicator.textContent=label;
+    renderSyncIndicator(count);
     const message = !configured ? 'Saved ' + (memoryOnly ? 'for this visit' : 'on this device only.') :
       initializing ? 'Connecting to your account…' : !user ? (writeProblem || 'Saved on this device only.') :
       memoryOnly ? 'Device storage is full · Keep this page open until synced' :
@@ -279,14 +284,20 @@ window.DealsWeb = (() => {
   async function refresh(generation = epoch) {
     if (!user || signOutBusy || !navigator.onLine) return;
     const owner = user.id;
+    // Startup, realtime reconnect and Retry can overlap. Only the newest read
+    // may settle loading/error state; an older response cannot undo its result.
+    const revision = ++refreshRevision;
+    const current = () => generation === epoch && revision === refreshRevision;
     try {
       const {data, error} = await client.from('usage').select('*').eq('user_id', owner).abortSignal(timeout());
-      if (generation !== epoch) return;
+      if (!current()) return;
       if (error) throw error;
-      for(const item of data||[])await receiveRow(item,generation);
-      loadingUsage = false; readProblem = '';lastSynced=Date.now();retryDelay=15000; await persist(); emit();
+      for(const item of data||[]){if(!current())return;await receiveRow(item,generation);}
+      await persist();
+      if(!current())return;
+      loadingUsage = false; readProblem = '';lastSynced=Date.now();retryDelay=15000; emit();
       if(onboarding)finishSignin();else replayPending();
-    } catch { if (generation === epoch) { loadingUsage = false; readProblem = "Couldn't refresh your uses. Retry when connected.";account();replayPending(); } }
+    } catch { if (current()) { loadingUsage = false; readProblem = "Couldn't refresh your uses. Retry when connected.";account();replayPending(); } }
   }
   async function sessionChanged(session) {
     const nextUser = deletedAccounts.has(session?.user?.id)?null:session?.user||null;
