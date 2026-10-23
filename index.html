@@ -62,7 +62,6 @@
 #about-sheet.account-focused .install-row{display:none}
 #about-sheet.account-focused{max-height:90dvh}
 #signin-panel{padding-top:12px;padding:0}
-.auth-modes{margin:0 0 var(--space-24)}
 .account h2{font-size:var(--type-heading);line-height:var(--leading-heading);margin:0 0 var(--space-16)}
 .account p{overflow-wrap:anywhere;margin:var(--space-16) 0;line-height:var(--leading-reading)}
 #signin-intro{margin-bottom:var(--space-24)}
@@ -90,10 +89,6 @@
 #merge-skip{display:block;width:100%;margin-top:var(--space-8)}
 #auth-continue{margin:var(--space-8) 0}
 .account button{white-space:nowrap}
-.auth-modes button{min-height:max(44px,2.75rem)}
-.account .auth-modes{display:flex;width:100%;height:auto;min-height:52px;float:none;margin:0 0 var(--space-24);padding:var(--space-4)}
-.account .auth-modes button{flex:1;min-width:0}
-.account .auth-modes button::before{content:none}
 #about-sheet>.utility-head{flex-shrink:0;position:sticky;z-index:1;padding-block:12px;margin-top:-12px;top:0;margin:0;padding:12px 16px;background:var(--material);width:100%}
 #about-sheet:has(#signin-panel:not([hidden])) .account{margin:0 16px;padding:12px 0}
 #about-sheet.account-focused .account{background:var(--clear);border:0;margin:0 16px;padding:12px 0}
@@ -106,7 +101,6 @@
 .header-sync::before{content:'';width:6px;height:6px;border-radius:var(--radius-pill);background:var(--muted);margin-right:5px;display:none}
 #account-email{font-weight:400;color:var(--muted)}
 #not-you{padding:0;text-align:left;justify-self:start;font-size:var(--type-caption)}
-#unknown-create{line-height:var(--leading-body);width:100%;background:var(--accent-tint);color:var(--accent);border:0;border-radius:var(--radius-pill);min-height:50px;height:auto;padding:12px;font-size:var(--type-emphasis);font-weight:600;white-space:normal}
 #merge-title{margin-bottom:8px}
 #merge-message{margin-top:8px}
 #signout.signout-row{color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent);border:0;border-radius:var(--radius-group);padding:12px 16px;margin:12px 0;font-size:var(--type-body)}
@@ -145,6 +139,30 @@
 .catalog-skeleton-row span+span {width:85%;height:.8125rem;margin-top:var(--space-12)}
 /* Keep the enlarged Maps hit target inside its own row, away from sheet controls. */
 .map-address {position:relative}
+
+/* Account tasks reuse the 12px grouped fields and the sheet's 16px spacing. */
+.account .danger-text{color:var(--red);background:var(--clear);border:0;text-align:left;font-size:var(--type-body);min-height:44px;padding:12px 0}
+#delete-panel,#catchup-panel{display:grid;gap:var(--space-16)}
+#delete-panel[hidden],#catchup-panel[hidden]{display:none}
+#catchup-search{width:100%;min-height:48px;margin:8px 0 16px;padding:12px;border:1px solid var(--field-border);border-radius:var(--radius-group);background:var(--surface);color:var(--text);font:inherit}
+#catchup-results{display:grid;gap:0}
+.catchup-row{padding:12px 0;border-bottom:var(--hairline) solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.catchup-add{background:var(--clear);color:var(--text);border:0;text-align:left;min-height:44px;font:inherit;padding:0;white-space:normal!important}
+.catchup-add strong,.catchup-add span{display:block}
+.catchup-add span{font-size:var(--type-caption);color:var(--muted);line-height:var(--leading-reading);margin-top:4px}
+.catchup-count{width:3.5rem;min-height:44px;background:var(--surface);color:var(--text);border:1px solid var(--field-border);border-radius:var(--radius-group);font:inherit;text-align:center}
+.catchup-footer{position:sticky;bottom:0;padding:16px 0;background:var(--material);backdrop-filter:blur(20px);display:grid;gap:8px}
+#catchup-ask{display:grid;gap:8px}
+#delete-panel .primary{width:100%}
+@media(prefers-reduced-transparency:reduce){.catchup-footer{background:var(--surface);backdrop-filter:none}}
+@media(prefers-contrast:more){.catchup-footer{background:var(--surface)}#catchup-search,.catchup-count{border-color:var(--text)}}
+/* Focused tasks sit directly on the sheet; they do not need a second card. */
+#about-sheet.account-focused>.account:not(.utility-head){background:var(--clear);margin:8px 16px 0;padding:12px 0;border-radius:0}
+#about-sheet.account-focused #signin-panel{display:grid;gap:16px}
+#about-sheet.account-focused #signin-panel[hidden]{display:none}
+#about-sheet.account-focused #signin-title,#about-sheet.account-focused #signin-intro{margin:0}
+#about-sheet.account-focused #signin-status:not(:empty){margin:0}
+#about-sheet.account-focused #catchup-title,#about-sheet.account-focused #delete-title{margin:0}
 
 /* Canonical component rules; media queries provide intentional variants. */
 *{box-sizing:border-box}
@@ -849,7 +867,7 @@ body::after{content:none}
 <button id="catalog-retry" class="primary" hidden>Try again</button>
 <div class="catalog-skeleton" aria-hidden="true"><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div></div></section><main class="workspace"><section class="list-pane" aria-label="Deals list" id="list-pane"><div class="list-heading"><span class="count" id="result-count"></span><button class="text-button filter-clear" id="clear-filters">Clear</button><div class="sort-label"><button class="text-button" id="sort-order" aria-haspopup="dialog">Best value</button></div></div><p id="location-reference" class="location-reference" role="status"></p><section id="location-card" class="location-card" hidden><h2>Show deals closest to you</h2><p id="location-card-help" class="quiet"></p><button id="location-card-allow" class="text-button">Allow location</button><button id="location-card-city" class="text-button">Choose a city</button></section><p id="location-tip" class="quiet" role="status" hidden></p><div id="date-context" hidden><button class="pill" id="date-day" aria-haspopup="dialog">Today <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button><button class="pill" id="date-budget" aria-haspopup="dialog">Any budget <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button></div><p id="date-status" hidden></p><p class="correction" id="correction" hidden></p><h2 class="sr-only">Offers</h2><div id="results" tabindex="-1"></div></section>
 <div class="detail-placeholder" id="detail-placeholder"><div><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-credit-card"> <path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /> <path d="M3 10l18 0" /> <path d="M7 15l.01 0" /> <path d="M11 15l2 0" /></svg><h2 id="placeholder-title">Select an offer</h2><p class="quiet" id="placeholder-expiry"></p></div></div>
-<section class="detail" id="detail" aria-labelledby="detail-title" tabindex="-1" hidden><div class="detail-head" id="detail-head"><div class="handle" aria-hidden="true"></div><div class="detail-nav"><span id="detail-category"></span><button id="close-detail" class="text-button" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-x"> <path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></svg></button></div></div><div class="detail-scroll" id="detail-scroll"><p class="closed-banner amber" id="temporary-banner" hidden>May be closed right now. Call before you go.</p><h2 id="detail-title" tabindex="-1"></h2><button class="text-button" id="show-in-list" hidden>Show in list</button><p id="detail-tag" hidden></p><p class="full-offer" id="full-offer"></p><p class="quiet estimate" id="estimate"></p><div class="good-to-know" id="good-to-know" hidden></div><div class="scope" id="scope"></div><h3 id="locations-heading">Locations</h3><div id="locations"></div><button class="text-button" id="add-note" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-plus"> <path d="M12 5l0 14" /> <path d="M5 12l14 0" /></svg>Add a note</button><div id="note-editor" hidden><label class="note-label" for="notes">Your notes <span class="note-status" id="note-status" role="status"></span></label><textarea id="notes" class="notes" placeholder="Anything to remember for next time…" maxlength="12000"></textarea></div><p class="sync-status" id="sync-status" role="status" hidden></p><div class="card-text"><span class="detail-label">Card text</span><p class="verbatim" id="verbatim"></p></div></div><div class="detail-actions"><div class="remaining-line"><strong id="remaining" role="status"></strong><button class="text-button" id="restore" hidden>Undo</button></div><button id="mark-used" class="primary" type="button">Mark used</button></div></section></main></div>
+<section class="detail" id="detail" aria-labelledby="detail-title" tabindex="-1" hidden><div class="detail-head" id="detail-head"><div class="handle" aria-hidden="true"></div><div class="detail-nav"><span id="detail-category"></span><button id="close-detail" class="text-button" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-x"> <path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></svg></button></div></div><div class="detail-scroll" id="detail-scroll"><p class="closed-banner amber" id="temporary-banner" hidden>May be closed right now. Call before you go.</p><h2 id="detail-title" tabindex="-1"></h2><button class="text-button" id="show-in-list" hidden>Show in list</button><p id="detail-tag" hidden></p><p class="full-offer" id="full-offer"></p><p id="usage-history" class="quiet" hidden></p><p class="quiet estimate" id="estimate"></p><div class="good-to-know" id="good-to-know" hidden></div><div class="scope" id="scope"></div><h3 id="locations-heading">Locations</h3><div id="locations"></div><button class="text-button" id="add-note" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-plus"> <path d="M12 5l0 14" /> <path d="M5 12l14 0" /></svg>Add a note</button><div id="note-editor" hidden><label class="note-label" for="notes">Your notes <span class="note-status" id="note-status" role="status"></span></label><textarea id="notes" class="notes" placeholder="Anything to remember for next time…" maxlength="12000"></textarea></div><p class="sync-status" id="sync-status" role="status" hidden></p><div class="card-text"><span class="detail-label">Card text</span><p class="verbatim" id="verbatim"></p></div></div><div class="detail-actions"><div class="remaining-line"><strong id="remaining" role="status"></strong><button class="text-button" id="restore" hidden>Undo</button></div><button id="mark-used" class="primary" type="button">Mark used</button></div></section></main></div>
 <div class="list-toast" id="list-toast" hidden><span class="toast-copy"><strong id="list-toast-text" role="status"></strong><span id="list-toast-business"></span></span><button class="text-button" id="list-undo">Undo</button></div><button class="text-button back-top" id="back-top" hidden>Back to top</button>
 <div class="sr-only" id="announcements" role="status" aria-live="polite"></div><div id="backdrop" class="backdrop" hidden></div>
 <section class="utility" id="city-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="city-title" hidden><div class="handle" aria-hidden="true"></div><div class="utility-head"><h2 id="city-title">Choose a city</h2><button class="text-button picker-close" id="close-city" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-x"> <path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></svg></button></div><p class="city-subtitle" id="city-subtitle"></p><div id="quick-cities" class="quick-cities"></div><label class="search"><span class="sr-only">Search cities</span><input id="city-search" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="city-options" type="search" placeholder="Search cities" autocomplete="off"></label><div class="city-options" id="city-options" role="listbox" aria-label="City options"></div></section>
@@ -861,19 +879,15 @@ body::after{content:none}
 <p id="last-synced" class="quiet" hidden></p>
 <p id="account-status" class="quiet" role="status">Saved on this device only</p>
 <p class="quiet" id="account-privacy">Your uses are private to you.</p>
-<button class="summary-row" id="signin-open"><span>Sign in or create account</span><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button>
+<button class="summary-row" id="signin-open"><span>Sign in</span><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-right"> <path d="M9 6l6 6l-6 6" /></svg></button>
 <div id="signin-panel" hidden>
-<div class="segments auth-modes" role="group" aria-label="Account mode">
-<button id="auth-signin" type="button" aria-pressed="false">Sign in</button>
-<button id="auth-create" type="button" aria-pressed="true">Create account</button>
-</div>
-<h2 id="signin-title">Track your card on all your devices</h2>
+<h2 id="signin-title">Sign in</h2>
 <p id="signin-intro" class="quiet">Use your own email. Each person has a separate card.</p>
 <form id="signin-form">
 <label for="signin-email">Email address</label>
 <input id="signin-email" type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required>
 <button id="not-you" class="text-button" type="button" hidden>Not you? Use a different email</button>
-<button id="signin-submit" class="primary" type="submit">Create account</button>
+<button id="signin-submit" class="primary" type="submit">Email me a code</button>
 </form>
 <div id="signin-sent" hidden>
 <form id="code-form">
@@ -890,7 +904,32 @@ body::after{content:none}
 <p class="quiet">Or open the link in that email on this device.</p>
 </div>
 <p id="signin-status" class="quiet" role="status" aria-live="polite"></p>
-<button id="unknown-create" class="primary secondary" hidden>Create account with this email</button>
+</div>
+<button id="catchup-open" class="summary-row" hidden>Catch up my card</button>
+<div id="catchup-panel" hidden>
+<h2 id="catchup-title" tabindex="-1">Already used some deals on your card?</h2>
+<div id="catchup-ask">
+<button id="catchup-pick" class="primary">Pick them</button>
+<button id="catchup-skip" class="text-button">I haven't used any</button>
+</div>
+<div id="catchup-picker" hidden>
+<label for="catchup-search">Find deals you've used</label>
+<input id="catchup-search" type="search" placeholder="Cafe Rio, Swig, Crumbl" autocomplete="off">
+<div id="catchup-results"></div>
+<div class="catchup-footer">
+<p id="catchup-total" role="status"></p>
+<button id="catchup-undo" class="text-button" hidden>Undo last use</button>
+<button id="catchup-done" class="primary">Done</button>
+</div>
+</div>
+</div>
+<button id="delete-open" class="summary-row danger-text" hidden>Delete my account and data</button>
+<div id="delete-panel" hidden>
+<h2 id="delete-title" tabindex="-1">Delete your account?</h2>
+<p>This permanently deletes your account, uses, notes and settings. You will need a new invite to sign in again.</p>
+<p id="delete-status" class="auth-error" role="status"></p>
+<button id="delete-cancel" class="primary secondary">Keep my account</button>
+<button id="delete-confirm" class="summary-row danger-text">Delete permanently</button>
 </div>
 <button id="signout" class="summary-row signout-row" hidden>Sign out</button>
 <div id="auth-success" hidden>
@@ -1522,7 +1561,7 @@ function resetFilters(keepQuery=false){const savedQuery=keepQuery===true?query:'
 function applyModal(){const phoneDetail=Boolean(selected)&&!desktop.matches,modal=Boolean(utility)||phoneDetail;$('backdrop').hidden=!modal;$('detail-placeholder').hidden=Boolean(selected)||document.querySelector('.workspace').classList.contains('empty-workspace');setFlag($('browse-chrome'),'inert',modal);setFlag($('list-pane'),'inert',modal);setFlag($('detail'),'inert',Boolean(utility));setFlag($('list-toast'),'inert',modal);setClass($('list-toast'),'sheet-covered',modal);if(selected){setAttr($('detail'),'role',desktop.matches?'region':'dialog');if(!desktop.matches)setAttr($('detail'),'aria-modal','true');else setAttr($('detail'),'aria-modal',null);}}
 function openUtility(name){utilityAnchor=$(name+'-button');dismissStatusToast();pauseToast();dismissLocationAsk();const fresh=$(name+'-sheet').hidden;utility=name;$(name+'-sheet').classList.remove('closing');$(name+'-sheet').hidden=false;applyModal();if(name==='availability'){const rect=$('availability-button').getBoundingClientRect();const sheet=$('availability-sheet');sheet.style.top=(rect.bottom+8)+'px';sheet.style.left=Math.max(16,Math.min(rect.left,innerWidth-236))+'px';renderAvailability();sheet.focus({preventScroll:true});}else if(name==='city'||name==='cuisine'){const rect=$(name+'-button').getBoundingClientRect();document.documentElement.style.setProperty('--city-top',Math.min(rect.bottom+8,innerHeight-240)+'px');document.documentElement.style.setProperty('--city-left',Math.min(rect.left,innerWidth-396)+'px');$(name+'-search').value='';if(name==='city')renderCities();else{renderCuisines();$('cuisine-options').scrollTop=0;}if(document.documentElement.dataset.input==='keyboard')$(name+'-search').focus();else $(name+'-sheet').focus({preventScroll:true,focusVisible:false});}else{const button=$('about-button'),rect=button.getBoundingClientRect(),anchor={bottom:rect.bottom+(button.offsetHeight-rect.height)/2,right:rect.right+(button.offsetWidth-rect.width)/2};$('about-sheet').style.setProperty('--card-top',anchor.bottom+8+'px');$('about-sheet').style.setProperty('--card-left',Math.max(16,Math.min(anchor.right-380,innerWidth-396))+'px');renderCardProgress();$('expiry').textContent='Valid through '+expiryLabel()+' · '+daysLeft()+' days left';$('sheet-days-left').hidden=true;$('about-sync').textContent=mode==='local'?(memoryOnly?'Saved for this visit only':"Saved on this device only. Your uses don't appear on other devices or anyone else's. Clearing browser data erases them."):'Tracked for you under your claude.ai account. Anyone else who opens this page has their own separate uses.';window.DealsWeb?.account();$('about-sheet').focus({preventScroll:true});}presentSheet($(name+'-sheet'),fresh);}
 
-function closeUtility(){const name=utility;if(!name)return;animateClose($(name+'-sheet'),()=>{utility=null;applyModal();toastRemaining=6500;resumeToast();returnTo(utilityAnchor);});}
+function closeUtility(){const name=utility;if(!name||name==='about'&&window.DealsWeb?.beforeCloseAccount())return;animateClose($(name+'-sheet'),()=>{utility=null;applyModal();toastRemaining=6500;resumeToast();returnTo(utilityAnchor);});}
 let toastDeadline=0,toastRemaining=6500,toastHovered=false;
 function toastSpace(){document.documentElement.style.setProperty('--toast-space',$('list-toast').hidden?'0px':($('list-toast').getBoundingClientRect().height+16)+'px');}
 function dismissToast(){if(saveFailed)return;if($('list-toast').hidden&&!undoAction)return;clearTimeout(toastTimer);undoAction=null;$('list-toast').classList.remove('show');setTimeout(()=>{if(!$('list-toast').classList.contains('show')){$('list-toast').hidden=true;toastSpace();}},200);}
@@ -1537,7 +1576,7 @@ new ResizeObserver(toastSpace).observe($('list-toast'));
 
 function hideDetail(){paintDepth(utility==='about'&&!desktop.matches?1:0);detailOpenedByUser=false;feedback=null;selectRow(null);stopSheet($('detail'));$('detail').hidden=true;$('detail').style.transform='';$('detail').style.opacity='';applyModal();}
 function rowAt(index){const rows=[...$('results').querySelectorAll('.deal-main')].filter(el=>!el.closest('[hidden]'));return rows[Math.max(0,Math.min(index,rows.length-1))]||$('results');}
-function openDetail(id,trigger,automatic=false){if(!automatic){dismissStatusToast();pauseToast();window.DealsWeb?.clearNotice(id);$('results').querySelector('.deal[data-id="'+id+'"] .remote-notice')?.remove();}if(!automatic&&!$('location-sheet').hidden)dismissLocationAsk(true);const fresh=$('detail').hidden;detailOpenedByUser=!automatic;returnIndex=[...$('results').querySelectorAll('.deal-main')].filter(el=>!el.closest('[hidden]')).indexOf(trigger);flushNote();feedback=null;lastDetailUse=null;selectRow(id);returnFocus=trigger;const o=offers.get(id);$('detail').dataset.offerId=id;setClass($('detail'),'many-branches',o.locations.length>=2);$('detail').classList.remove('closing');$('detail').hidden=false;$('detail-category').textContent='';$('detail-title').textContent=o.business;const tag=cuisineData.get(o.business),tagLabel=tag?.isFood?tag.cuisines[0]:tag?.kind;$('detail-tag').hidden=!tagLabel;$('detail-tag').textContent=tagLabel||'';$('full-offer').textContent=displayTitle(o);$('verbatim').textContent=o.printedBusiness+' · '+o.offer;const sameText=normalizeCard(o.offer)===normalizeCard(displayTitle(o));$('verbatim').closest('.card-text').hidden=false;$('detail-scroll').classList.toggle('no-card-text',sameText);document.getElementById('closed-banner')?.remove();if(closed(o)){const warning=node('p','closed-banner','This location has permanently closed.');warning.id='closed-banner';$('detail-scroll').prepend(warning);}$('temporary-banner').hidden=!notNow(o);
+function openDetail(id,trigger,automatic=false){if(!automatic){dismissStatusToast();pauseToast();window.DealsWeb?.clearNotice(id);$('results').querySelector('.deal[data-id="'+id+'"] .remote-notice')?.remove();}if(!automatic&&!$('location-sheet').hidden)dismissLocationAsk(true);const fresh=$('detail').hidden;detailOpenedByUser=!automatic;returnIndex=[...$('results').querySelectorAll('.deal-main')].filter(el=>!el.closest('[hidden]')).indexOf(trigger);flushNote();feedback=null;lastDetailUse=null;selectRow(id);returnFocus=trigger;const o=offers.get(id);$('detail').dataset.offerId=id;window.DealsWeb?.showHistory(id);setClass($('detail'),'many-branches',o.locations.length>=2);$('detail').classList.remove('closing');$('detail').hidden=false;$('detail-category').textContent='';$('detail-title').textContent=o.business;const tag=cuisineData.get(o.business),tagLabel=tag?.isFood?tag.cuisines[0]:tag?.kind;$('detail-tag').hidden=!tagLabel;$('detail-tag').textContent=tagLabel||'';$('full-offer').textContent=displayTitle(o);$('verbatim').textContent=o.printedBusiness+' · '+o.offer;const sameText=normalizeCard(o.offer)===normalizeCard(displayTitle(o));$('verbatim').closest('.card-text').hidden=false;$('detail-scroll').classList.toggle('no-card-text',sameText);document.getElementById('closed-banner')?.remove();if(closed(o)){const warning=node('p','closed-banner','This location has permanently closed.');warning.id='closed-banner';$('detail-scroll').prepend(warning);}$('temporary-banner').hidden=!notNow(o);
  enhanceDetail(o);
  $('notes').value=noteDrafts.get(id)??state(id).note;$('note-status').textContent='';showNote(Boolean($('notes').value));$('detail-scroll').scrollTop=0;applyModal();updateDetail();if(!automatic){$('detail-title').focus({preventScroll:true});if(fresh||motionState($('detail')).target!==0)presentSheet($('detail'),fresh);}}
 function closeDetail(){if(!selected)return;paneDismissed=true;const id=selected;flushNote();animateClose($('detail'),()=>{hideDetail();returnTo(desktop.matches||query?$('search'):document.querySelector('.deal-main[data-offer-id="'+id+'"]')||rowAt(returnIndex));lastDetailUse=null;toastRemaining=6500;resumeToast();});}
@@ -1674,12 +1713,13 @@ async function connect(){
   window.DealsWeb.init({
    onLoading:setUsageLoading,
    onUsage(next){const ids=[...offers.keys()].filter(id=>(usage[id]?.used||0)!==(next[id]?.used||0)||window.DealsWeb?.notice(id));const first=!usageReceived;usageReceived=true;usage=next;if(first)renderList();else ids.forEach(patchUsage);updateDetail();if(!$('about-sheet').hidden)renderCardProgress();},
-   onReset(){usageReceived=false;if(utility==='about'){stopSheet($('about-sheet'));$('about-sheet').hidden=true;utility=null;applyModal();}clearTimeout(noteTimer);noteDrafts.clear();useLocks.clear();endFeedback();dismissToast();feedback=null;lastDetailUse=null;$('notes').value='';if(selected)hideDetail();},
+   onReset(){usageReceived=false;if(utility==='about'){stopSheet($('about-sheet'));$('about-sheet').hidden=true;utility=null;applyModal();}clearTimeout(noteTimer);noteDrafts.clear();useLocks.clear();endFeedback();dismissToast();feedback=null;lastDetailUse=null;$('notes').value='';$('usage-history').hidden=true;$('usage-history').textContent='';if(selected)hideDetail();},
    toast(message){showStatusToast(message);},
    saveFailure:setSaveFailure,
    showAccount(){if(utility&&utility!=='about')closeUtility();openUtility('about');document.querySelector('.account')?.scrollIntoView({block:'start'});},
    replay(action){if(action.kind==='use')markUse(action.id,true);else if(action.kind==='note')save(action.id,{...state(action.id),note:action.note});},
    closeAccount:closeUtility,
+   onForgetDevice(){locationPrefs={};gpsOrigin=null;city='All';category='All';cuisine='All';recentCities=[];cityChosenOnce=false;resetNearbySort();updateFilters();renderList(true);},
    onSettings:receiveLocationSettings,
    getLocationSettings:deviceLocationSettings,
    status
@@ -1714,7 +1754,7 @@ function enhanceDetail(o){
  if(!$('offer-block')){
   const offer=node('div','detail-intro');offer.id='offer-block';
   const title=node('div','detail-title-row');title.append($('detail-title'),$('show-in-list'));
-  offer.append($('temporary-banner'),title,$('detail-tag'),$('full-offer'),$('estimate'));
+  offer.append($('temporary-banner'),title,$('detail-tag'),$('full-offer'),$('usage-history'),$('estimate'));
   const where=node('div','detail-block');where.id='where-block';const branches=node('div','branch-group');branches.append($('locations-heading'),$('locations'));where.append(branches,$('scope'),$('good-to-know'));
   const card=node('div','detail-block');card.id='card-block';card.append(document.querySelector('.card-text'),$('add-note'),$('note-editor'),$('sync-status'));
   const redeem=node('div','detail-block');redeem.id='redeem-block';scroll.replaceChildren(offer,where,redeem,card);
