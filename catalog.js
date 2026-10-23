@@ -48,9 +48,9 @@ window.DealsCatalog = (() => {
     // Category order is presentation, never a second source of offer data.
     const order = ['Free Stuff','Pizza','Restaurants','Entertainment','Retail, Auto, Health & Beauty','Treats & Drinks','Sandwiches & Burgers'];
     const categories = [...new Set(offers.map(o => o.category))];
-    return {version:raw.version, data:{card:{name:raw.card.name,expires:raw.card.expires_on}, offers,
+    return {version:raw.version, cuisineRegions:raw.cuisine_regions||[], data:{cities:(raw.cities||[]).filter(c=>typeof c.name==='string'&&Number.isFinite(c.lat)&&Math.abs(c.lat)<=90&&Number.isFinite(c.lng)&&Math.abs(c.lng)<=180),card:{name:raw.card.name,expires:raw.card.expires_on}, offers,
       categoryOrder:[...order.filter(c => categories.includes(c)),...categories.filter(c => !order.includes(c))], places:raw.places||[]},
-      cuisines:raw.businesses.map(b => ({business:b.name,isFood:b.is_food,cuisines:b.cuisines||[],kind:b.kind})), values, geo};
+      cuisines:raw.businesses.map(b => ({business:b.name,isFood:b.is_food,originPrimary:b.origin_primary??null,originSecondary:b.origin_secondary??null,foodTypes:b.food_types||[],cuisines:[b.origin_primary,...(b.food_types||[])].filter(Boolean),kind:b.kind})), values, geo};
   }
   async function cached() {
     const db = await dbPromise;

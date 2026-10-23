@@ -164,6 +164,20 @@
 #about-sheet.account-focused #signin-status:not(:empty){margin:0}
 #about-sheet.account-focused #catchup-title,#about-sheet.account-focused #delete-title{margin:0}
 
+.cuisine-region { margin: 0; font-size: inherit; }
+.cuisine-region button { font-weight: 600; width: 100%; }
+.city-option.cuisine-child { padding-inline-start: var(--space-32); }
+.section-label.quiet { color: var(--muted); font-size: var(--type-caption); font-weight: 500; }
+
+/* Invite controls reuse the account sheet's materials and spacing scale. */
+#invite-form { display:grid; gap:var(--space-12); }
+#invite-form input { width:100%; min-height:44px; padding:var(--space-12); border:1px solid var(--line); border-radius:var(--radius-group); background:var(--surface); color:var(--text); font:inherit; box-sizing:border-box; }
+#invite-people { list-style:none; margin:0; padding:0; }
+.invite-person { padding:var(--space-16) 0; overflow-wrap:anywhere; }
+.invite-person + .invite-person { border-top:1px solid var(--line); }
+#invites-panel > * + * { margin-top:var(--space-16); }
+#invites-panel [hidden] { display:none; }
+
 /* Canonical component rules; media queries provide intentional variants. */
 *{box-sizing:border-box}
 button:focus-visible{outline:2px solid var(--accent-ring);outline-offset:2px}
@@ -391,7 +405,7 @@ svg.chevron{width:1rem;height:1rem;stroke-width:2}
 .detail-nav{display:flex;align-items:center;color:var(--muted);font-size:var(--type-caption);border-radius:var(--radius-pill);height:44px;justify-content:flex-end;gap:var(--space-8)}
 .detail-nav button{margin-right:-8px;margin:0}
 .detail .notes{padding:var(--space-12)}
-.location-reference{color:var(--muted);font-size:var(--type-caption);line-height:var(--leading-reading);position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.location-reference{color:var(--muted);font-size:var(--type-caption);line-height:var(--leading-reading);display:block;margin:0 0 var(--space-8);text-align:left;white-space:normal;height:auto}.location-reference:disabled{opacity:1;cursor:default}
 #location-card{display:none}
 #mark-used:active{scale:1;transform:scale(.97);transition-duration:0s}
 [tabindex="-1"]:focus{outline:none!important}
@@ -865,7 +879,7 @@ body::after{content:none}
 </div><section id="catalog-loading" class="catalog-loading" aria-busy="true">
 <div role="status"><h2 id="catalog-title">Loading your deals</h2><p id="catalog-help">Getting the latest offers for your card.</p></div>
 <button id="catalog-retry" class="primary" hidden>Try again</button>
-<div class="catalog-skeleton" aria-hidden="true"><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div></div></section><main class="workspace"><section class="list-pane" aria-label="Deals list" id="list-pane"><div class="list-heading"><span class="count" id="result-count"></span><button class="text-button filter-clear" id="clear-filters">Clear</button><div class="sort-label"><button class="text-button" id="sort-order" aria-haspopup="dialog">Best value</button></div></div><p id="location-reference" class="location-reference" role="status"></p><section id="location-card" class="location-card" hidden><h2>Show deals closest to you</h2><p id="location-card-help" class="quiet"></p><button id="location-card-allow" class="text-button">Allow location</button><button id="location-card-city" class="text-button">Choose a city</button></section><p id="location-tip" class="quiet" role="status" hidden></p><div id="date-context" hidden><button class="pill" id="date-day" aria-haspopup="dialog">Today <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button><button class="pill" id="date-budget" aria-haspopup="dialog">Any budget <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button></div><p id="date-status" hidden></p><p class="correction" id="correction" hidden></p><h2 class="sr-only">Offers</h2><div id="results" tabindex="-1"></div></section>
+<div class="catalog-skeleton" aria-hidden="true"><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div><div class="catalog-skeleton-row"><span></span><span></span></div></div></section><main class="workspace"><section class="list-pane" aria-label="Deals list" id="list-pane"><div class="list-heading"><span class="count" id="result-count"></span><button class="text-button filter-clear" id="clear-filters">Clear</button><div class="sort-label"><button class="text-button" id="sort-order" aria-haspopup="dialog">Best value</button></div></div><button id="location-reference" class="text-button location-reference" aria-label="Location accuracy"></button><section id="location-card" class="location-card" hidden><h2>Show deals closest to you</h2><p id="location-card-help" class="quiet"></p><button id="location-card-allow" class="text-button">Allow location</button><button id="location-card-city" class="text-button">Choose a city</button></section><p id="location-tip" class="quiet" role="status" hidden></p><div id="date-context" hidden><button class="pill" id="date-day" aria-haspopup="dialog">Today <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button><button class="pill" id="date-budget" aria-haspopup="dialog">Any budget <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-chevron-down"> <path d="M6 9l6 6l6 -6" /></svg></button></div><p id="date-status" hidden></p><p class="correction" id="correction" hidden></p><h2 class="sr-only">Offers</h2><div id="results" tabindex="-1"></div></section>
 <div class="detail-placeholder" id="detail-placeholder"><div><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-credit-card"> <path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /> <path d="M3 10l18 0" /> <path d="M7 15l.01 0" /> <path d="M11 15l2 0" /></svg><h2 id="placeholder-title">Select an offer</h2><p class="quiet" id="placeholder-expiry"></p></div></div>
 <section class="detail" id="detail" aria-labelledby="detail-title" tabindex="-1" hidden><div class="detail-head" id="detail-head"><div class="handle" aria-hidden="true"></div><div class="detail-nav"><span id="detail-category"></span><button id="close-detail" class="text-button" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-x"> <path d="M18 6l-12 12" /> <path d="M6 6l12 12" /></svg></button></div></div><div class="detail-scroll" id="detail-scroll"><p class="closed-banner amber" id="temporary-banner" hidden>May be closed right now. Call before you go.</p><h2 id="detail-title" tabindex="-1"></h2><button class="text-button" id="show-in-list" hidden>Show in list</button><p id="detail-tag" hidden></p><p class="full-offer" id="full-offer"></p><p id="usage-history" class="quiet" hidden></p><p class="quiet estimate" id="estimate"></p><div class="good-to-know" id="good-to-know" hidden></div><div class="scope" id="scope"></div><h3 id="locations-heading">Locations</h3><div id="locations"></div><button class="text-button" id="add-note" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-plus"> <path d="M12 5l0 14" /> <path d="M5 12l14 0" /></svg>Add a note</button><div id="note-editor" hidden><label class="note-label" for="notes">Your notes <span class="note-status" id="note-status" role="status"></span></label><textarea id="notes" class="notes" placeholder="Anything to remember for next time…" maxlength="12000"></textarea></div><p class="sync-status" id="sync-status" role="status" hidden></p><div class="card-text"><span class="detail-label">Card text</span><p class="verbatim" id="verbatim"></p></div></div><div class="detail-actions"><div class="remaining-line"><strong id="remaining" role="status"></strong><button class="text-button" id="restore" hidden>Undo</button></div><button id="mark-used" class="primary" type="button">Mark used</button></div></section></main></div>
 <div class="list-toast" id="list-toast" hidden><span class="toast-copy"><strong id="list-toast-text" role="status"></strong><span id="list-toast-business"></span></span><button class="text-button" id="list-undo">Undo</button></div><button class="text-button back-top" id="back-top" hidden>Back to top</button>
@@ -923,6 +937,25 @@ body::after{content:none}
 </div>
 </div>
 </div>
+<button id="invites-open" class="summary-row" hidden>Invite people</button>
+<div id="invites-panel" hidden>
+<h2 id="invite-title" tabindex="-1">Invite people</h2>
+<form id="invite-form">
+<label for="invite-email">Email</label>
+<input id="invite-email" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="254" required>
+<label for="invite-note">Name or note (optional)</label>
+<input id="invite-note" type="text" autocomplete="off" placeholder="Sarah" maxlength="100">
+<button id="invite-submit" class="primary" type="submit">Invite</button>
+</form>
+<p id="invite-error" class="auth-error" role="alert"></p>
+<div id="invite-success" hidden><p id="invite-success-text" role="status"></p>
+<button id="invite-share" class="primary secondary">Copy message</button><p id="invite-share-status" role="status"></p></div>
+<h3>People</h3><p id="invite-list-status" class="quiet" role="status"></p>
+<button id="invite-retry" class="text-button" hidden>Retry</button>
+<p id="invite-empty" class="quiet">No one invited yet. Add an email above to get started.</p>
+<ul id="invite-people" aria-label="Invited people"></ul>
+<button id="invites-back" class="text-button">Back to Account</button>
+</div>
 <button id="delete-open" class="summary-row danger-text" hidden>Delete my account and data</button>
 <div id="delete-panel" hidden>
 <h2 id="delete-title" tabindex="-1">Delete your account?</h2>
@@ -958,6 +991,7 @@ body::after{content:none}
 </section>
 <script src="./config.js"></script>
 <script src="./catalog.js"></script>
+<script src="./admin-invites.js"></script>
 <script src="./adapter.js"></script>
 <script>
 /** Straight-line miles between two coordinates; no device or browser state. */
@@ -968,19 +1002,10 @@ function milesBetween(a, b) {
   return 3958.7613 * 2 * Math.asin(Math.sqrt(Math.min(1, h)));
 }
 
-/** Average unique, open mapped branches, so repeated offers do not bias a city. */
-function cityCenter(offers, city, geo) {
-  const branches = new Map();
-  for (const offer of offers) for (const branch of offer.locations) {
-    if (branch.city === city && !/closed/i.test(branch.placeStatus || '') && geo[branch.mapsUrl])
-      branches.set(branch.mapsUrl, geo[branch.mapsUrl]);
-  }
-  const points = [...branches.values()];
-  return points.length ? {
-    lat: points.reduce((sum, point) => sum + point.lat, 0) / points.length,
-    lng: points.reduce((sum, point) => sum + point.lng, 0) / points.length,
-    city
-  } : null;
+/** Official reference centers from the catalog, never branch averages. */
+function cityCenter(offers, city, geo, centers = []) {
+  const point = centers.find(center => center.name === city);
+  return point ? {lat:point.lat,lng:point.lng,city} : null;
 }
 
 /** Parse local-day/time/season restrictions without changing source offers. */
@@ -1075,7 +1100,7 @@ function recommend(offers, {location = null, cuisine = 'All', category = 'All',
   const metric = item => mode === 'value' ? item.dealScore : item.score;
   const status = (a,b) => Number(a.notNow)-Number(b.notNow) || Number(!a.validToday)-Number(!b.validToday);
   results.sort((a,b) => {
-    if(mode==='nearby') return a.band-b.band || b.dealScore-a.dealScore || a.offer.business.localeCompare(b.offer.business) || a.offer.id.localeCompare(b.offer.id);
+    if(mode==='nearby') return a.band-b.band || Number(b.miles!==null&&b.miles<1/5280&&!b.assumedDistance)-Number(a.miles!==null&&a.miles<1/5280&&!a.assumedDistance) || b.dealScore-a.dealScore || a.offer.business.localeCompare(b.offer.business) || a.offer.id.localeCompare(b.offer.id);
     const timing = status(a,b); if (timing&&mode!=='fewest') return timing;
     if (mode === 'fewest') {
       const left = item => item.offer.limit === null ? Infinity : item.offer.limit-(usage[item.offer.id]?.used||0);
@@ -1095,6 +1120,8 @@ if (typeof module !== 'undefined') module.exports = {recommend, cityCenter, mile
 'use strict';
 const initialCatalog = await window.DealsCatalog.ready;
 document.documentElement.lang='en';
+const cuisineV2 = await import('./cuisine-v2.js');
+let cuisineRegions = initialCatalog.cuisineRegions;
 let data = initialCatalog.data;
 const $ = id => document.getElementById(id);
 const icons = {"credit-card": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-credit-card\">\n  <path d=\"M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z\" />\n  <path d=\"M3 10l18 0\" />\n  <path d=\"M7 15l.01 0\" />\n  <path d=\"M11 15l2 0\" /></svg>", "search": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-search\">\n  <path d=\"M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" />\n  <path d=\"M21 21l-6 -6\" /></svg>", "x": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-x\">\n  <path d=\"M18 6l-12 12\" />\n  <path d=\"M6 6l12 12\" /></svg>", "chevron-down": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-down\">\n  <path d=\"M6 9l6 6l6 -6\" /></svg>", "map-pin": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-map-pin\">\n  <path d=\"M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" />\n  <path d=\"M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z\" /></svg>", "circle-check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-circle-check\">\n  <path d=\"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" />\n  <path d=\"M9 12l2 2l4 -4\" /></svg>", "check": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-check\">\n  <path d=\"M5 12l5 5l10 -10\" /></svg>", "plus": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-plus\">\n  <path d=\"M12 5l0 14\" />\n  <path d=\"M5 12l14 0\" /></svg>", "mail": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-mail\">\n  <path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z\" />\n  <path d=\"M3 7l9 6l9 -6\" /></svg>", "navigation": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-navigation\">\n  <path d=\"M12 18.5l7.265 2.463c.196 .077 .42 .032 .57 -.116a.548 .548 0 0 0 .134 -.572l-7.969 -17.275l-7.97 17.275c-.07 .2 -.017 .424 .135 .572c.15 .148 .374 .193 .57 .116l7.265 -2.463\" /></svg>", "chevron-right": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" class=\"icon icon-chevron-right\">\n  <path d=\"M9 6l6 6l-6 6\" /></svg>"};
@@ -1302,7 +1329,7 @@ function availability(o){return filter==='all'||(!closed(o)&&(filter==='used'?le
 function inCity(o,value=city){if(value==='Online or no city')return online(o)||isUnknown(o);return value==='All'||Boolean(o.broadScope)||o.locations.some(l=>!permanentlyClosed(l)&&l.city===value);}
 const queryTokenCache=new Map();
 function queryTokens(q){if(!queryTokenCache.has(q))queryTokenCache.set(q,q.split(' ').filter(Boolean));return queryTokenCache.get(q);}
-function matchesQuery(o,q=normalize(query)){if(q==='free drink')return /free|bogo|2-4-1/i.test(o.offer)&&/\b(drink|smoothie|shake|coffee|lemonade|soda|tea)s?\b/i.test(o.offer);const x=searchIndex.get(o.id);return queryTokens(q).every(t=>x.all.includes(t));}
+function matchesQuery(o,q=normalize(query)){const matched=cuisineV2.matchesCuisineQuery(cuisineData.get(o.business),q,cuisineRegions);if(matched!==null)return matched;if(q==='free drink')return /free|bogo|2-4-1/i.test(o.offer)&&/\b(drink|smoothie|shake|coffee|lemonade|soda|tea)s?\b/i.test(o.offer);const x=searchIndex.get(o.id);return queryTokens(q).every(t=>x.all.includes(t));}
 function scopeLabel(o){return participating(o)?'Some locations':({'All locations':'Every location','All Utah':'Utah-wide','All Utah County':'Utah County'}[o.broadScope]??(o.broadScope||'').replace(/^All /,''));}
 function locationSummary(o){if(o.broadScope)return scopeLabel(o);const open=closed(o)?o.locations:o.locations.filter(l=>!permanentlyClosed(l));return [...new Set(open.filter(l=>city==='All'||l.city===city).map(l=>l.city).filter(Boolean))].join(', ')||'Location unknown';}
 
@@ -1355,7 +1382,7 @@ function updateFilters(){
 function railEdges(){const rail=$('categories'),row=$('toolbar'),scrolled=rail.scrollLeft>4,end=rail.scrollWidth<=rail.clientWidth||rail.scrollWidth-rail.clientWidth-rail.scrollLeft<=1;setClass(rail,'scrolled-left',scrolled);setClass(rail,'at-end',end);setClass(row,'scrolled-left',scrolled);setClass(row,'rail-end',end);}
 function revealCategory(){const rail=$('categories'),chip=dateIdeas?$('date-ideas'):[...rail.children].find(b=>b.dataset.value===category);if(!chip)return;chip.scrollIntoView({inline:'nearest',block:'nearest',behavior:'instant'});railEdges();}
 $('categories').addEventListener('scroll',railEdges,{passive:true});
-new ResizeObserver(railEdges).observe($('categories'));document.fonts.ready.then(railEdges);
+deferredResizeObserver(railEdges).observe($('categories'));document.fonts.ready.then(railEdges);
 
 function endFeedback(){for(const r of receipts.values())clearTimeout(r.timer);receipts.clear();confirmations.clear();}
 function chooseCategory(value){summaryView=null;endFeedback();dateIdeas=false;category=value;cuisine='All';resetNearbySort();persistFilters();updateFilters();renderList(true);const chip=[...$('categories').children].find(b=>b.dataset.value===value);chip.scrollIntoView({inline:'nearest',block:'nearest'});revealCategory();}
@@ -1376,29 +1403,65 @@ function openContextMenu(kind){
 $('date-day').onclick=()=>openContextMenu('day');$('date-budget').onclick=()=>openContextMenu('budget');$('sort-order').onclick=()=>openContextMenu('sort');
 $('categories').onkeydown=e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const buttons=[...$('categories').querySelectorAll('button')],index=buttons.indexOf(document.activeElement),next=buttons[(index+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length];if(next.id==='date-ideas')chooseDates(true);else chooseCategory(next.dataset.value);next.focus();};
 // Counts and the rendered list share matching, correction and availability rules.
-function inCuisine(o,value=cuisine){if(value==='Other')return !cuisineData.get(o.business)?.isFood;return value==='All'||typeGroup(o)===value||(cuisineData.get(o.business)?.cuisines||[]).includes(value);}
+function inCuisine(o,value=cuisine){return typeGroup(o)===value||cuisineV2.matchesCuisine(cuisineData.get(o.business),value,true,cuisineRegions);}
 function matchingOffers(cityValue=city,cuisineValue=cuisine){
  const q=normalize(query),base=dealOffers.filter(o=>(!dateIdeas||valueData[o.id]?.dateIdea)&&(!summaryView||summaryMatches(o))&&inCity(o,cityValue)&&inCuisine(o,cuisineValue)&&(category==='All'||o.category===category)),eligible=base.filter(availability);
  let visible=eligible.filter(o=>matchesQuery(o,q)),corrected=[];
- const drinkFallback=['boba','bubble tea','soda','sodas','drinks','tea','lemonade','smoothie','smoothies','juices'].includes(q)&&!eligible.some(o=>normalize(o.business+' '+o.offer).includes(q));if(drinkFallback)visible=eligible.filter(o=>['Soda & Drinks','Smoothies & Juice','Shave Ice & Snow Cones'].includes(cuisineData.get(o.business)?.cuisines[0]));
  const hiddenMatches=base.filter(o=>!availability(o)&&matchesQuery(o,q));
- const candidates=q.length>1&&visible.length<3?fuzzyCandidates(q).filter(x=>normalize(x.name)!==q):[];
+ const candidates=!cuisineV2.queryTargets(q).length&&q.length>1&&visible.length<3?fuzzyCandidates(q).filter(x=>normalize(x.name)!==q):[];
  if(candidates.length&&!hiddenMatches.length){const names=candidates.filter(c=>c.score===candidates[0].score).map(c=>c.name),extra=eligible.filter(o=>names.includes(o.business)&&!visible.includes(o));visible.push(...extra);corrected=[...new Set(extra.map(o=>o.business))];}
- const correction=q.length>1&&!visible.length?queryCorrection(q):null;if(correction){visible=eligible.filter(o=>matchesQuery(o,normalize(correction)));corrected=[correction];}
+ const correction=!cuisineV2.queryTargets(q).length&&q.length>1&&!visible.length?queryCorrection(q):null;if(correction){visible=eligible.filter(o=>matchesQuery(o,normalize(correction)));corrected=[correction];}
  return {base,visible,hiddenMatches,corrected};
 }
 function offerCount(cityValue=city,cuisineValue=cuisine){return matchingOffers(cityValue,cuisineValue).visible.filter(o=>filter!=='available'||left(o)!==0).length;}
 function cityOfferCount(value){return offerCount(value);}
-function renderCuisines(){
- renderPopularCuisines();const q=normalize($('cuisine-search').value);$('cuisine-options').replaceChildren();
- for(const value of ['All',...(typeMode()?typeNames():[...cuisineNames,'Other'])].filter(value=>!q||pickerMatches(value+' '+(cuisineSynonyms[value]||''),q)).sort((a,b)=>q?pickerTier(a,q)-pickerTier(b,q)||a.localeCompare(b):0)){
-  const count=value==='All'?offerCount(city,'All'):offerCount(city,value);if(value!=='All'&&value!==cuisine&&count===0)continue;
-  const b=node('button','city-option');b.type='button';b.dataset.cuisine=value;b.setAttribute('aria-pressed',String(cuisine===value));
-  b.append(node('span','checkmark',cuisine===value?'✓':''),node('span','',value==='All'?(typeMode()?'All types':'All cuisines'):value),node('span','count',String(count)));
-  b.onclick=()=>{endFeedback();dateIdeas=false;cuisine=value;resetNearbySort();persistFilters();updateFilters();renderList(true);closeUtility();};$('cuisine-options').append(b);
- }
- preparePicker('cuisine');
+function renderCuisines(){renderCuisineV2();}
+// Injected into the legacy closure by catalog_render.py. Shared rules are loaded first.
+function renderCuisineV2() {
+  const q = $('cuisine-search').value, root = $('cuisine-options');root.replaceChildren();
+  const base = matchingOffers(city, 'All').visible;
+  function option(value, child=false, header=false) {
+    const count=base.filter(o=>typeGroup(o)===value||cuisineV2.matchesCuisine(cuisineData.get(o.business),value,false,cuisineRegions)).length;
+    if(value!=='All'&&!count)return;
+    const region=cuisineV2.regionFor(value,cuisineRegions);
+    if(q&&!cuisineV2.pickerMatches(value,q)&&!(child&&region&&cuisineV2.pickerMatches(region,q)))return;
+    const b=node('button','city-option'+(child?' cuisine-child':''));b.type='button';b.dataset.cuisine=value;
+    b.append(node('span','checkmark',cuisine===value?'✓':''),node('span','',value==='All'?'All cuisines':value),node('span','count',String(count)));
+    b.onclick=()=>{endFeedback();dateIdeas=false;cuisine=value;resetNearbySort();persistFilters();updateFilters();renderList(true);closeUtility();};
+    if(header){const h=node('h3','cuisine-region');h.append(b);root.append(h);}else root.append(b);
+  }
+  option('All');
+  for(const [region,cuisines] of Object.entries(cuisineV2.REGIONS)) {
+    const hasChildren=cuisines.some(c=>cuisineV2.pickerMatches(c,q)&&base.some(o=>cuisineV2.matchesCuisine(cuisineData.get(o.business),c,false,cuisineRegions)));
+    if(!q||cuisineV2.pickerMatches(region,q)||hasChildren){
+      // Keep the region header visible when a child matches the picker search.
+      if(q&&!cuisineV2.pickerMatches(region,q)&&hasChildren){const h=node('h3','cuisine-region quiet',region);root.append(h);}else option(region,false,true);
+      for(const value of cuisines)if(value!==region)option(value,true);
+    }
+  }
+  if(cuisineV2.FOOD_TYPES.some(value=>cuisineV2.pickerMatches(value,q)&&base.some(o=>cuisineV2.matchesCuisine(cuisineData.get(o.business),value,false))))root.append(node('h3','quiet','Food type'));
+  for(const value of cuisineV2.FOOD_TYPES)option(value);
+  option('Other');
+  for(const value of typeNames())option(value);
+  preparePicker('cuisine');
 }
+
+/** Coalesce geometry writes into the next frame, outside resize delivery. */
+function deferredResizeObserver(callback) {
+  const pending = new Map();
+  let frame = 0;
+  return new ResizeObserver(entries => {
+    for (const entry of entries) pending.set(entry.target, entry);
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const entries = [...pending.values()];
+      pending.clear();
+      callback(entries);
+    });
+  });
+}
+
 
 // Recent choices are a per-viewer convenience; popularity is derived from open branches.
 let popularCities =[...cities].sort((a,b)=>dealOffers.filter(o=>inCity(o,b)&&!closed(o)).length-dealOffers.filter(o=>inCity(o,a)&&!closed(o)).length||a.localeCompare(b));
@@ -1417,25 +1480,8 @@ function pickerKey(name,e){if(['ArrowDown','ArrowUp'].includes(e.key)){e.prevent
 
 function normalize(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();}
 // Synonyms expand the researched cuisine index, never the printed offer text.
-const cuisineSynonyms={
- 'Mexican':'taco tacos burrito burritos quesadilla quesadillas nachos enchiladas',
- 'Japanese & Sushi':'sushi ramen japanese teriyaki hibachi',
- 'Soda & Drinks':'boba soda sodas bubble tea drinks lemonade',
- 'Desserts & Ice Cream':'ice cream icecream froyo frozen yogurt gelato dessert desserts sweets custard',
- 'Chicken & Wings':'wing wings chicken tenders nuggets fried chicken',
- 'BBQ':'barbecue barbeque brisket smoked meats',
- 'Burgers':'burger burgers hamburger hamburgers cheeseburger',
- 'Sandwiches & Subs':'sandwich sandwiches sub subs hoagie deli',
- 'Bakery & Cookies':'dessert desserts sweets bakery baked cookies cookie donut donuts doughnut doughnuts pastries pretzels',
- 'Breakfast & Brunch':'breakfast brunch pancake pancakes waffle waffles',
- 'Coffee & Cafe':'coffee cafe espresso latte',
- 'Hawaiian & Poke':'hawaiian poke',
- 'Mediterranean & Middle Eastern':'mediterranean middle eastern gyro gyros falafel hummus',
- 'Salads & Healthy':'salad salads healthy',
- 'Shave Ice & Snow Cones':'shave ice shaved ice snow cone snow cones',
- 'Smoothies & Juice':'smoothie smoothies juice juices'
-};
-function cuisineSearch(o){const tag=cuisineData.get(o.business);return tag?[tag.kind,typeGroup(o),typeGroup(o)==='Auto'?'car auto tires oil':typeGroup(o)==='Hair & beauty'?'barber haircut':'',o.category==='Treats & Drinks'?'dessert desserts sweets':'',...tag.cuisines.flatMap(name=>[name,cuisineSynonyms[name]||''])].join(' '):'';}
+const cuisineSynonyms=Object.fromEntries(Object.entries(cuisineV2.SYNONYMS).map(([name,words])=>[name,words.join(' ')]));
+function cuisineSearch(o){const tag=cuisineData.get(o.business);return tag?[tag.kind,typeGroup(o),typeGroup(o)==='Auto'?'car auto tires oil':typeGroup(o)==='Hair & beauty'?'barber haircut':'',o.category==='Treats & Drinks'?'dessert desserts sweets':'',...[cuisineV2.regionFor(tag.originPrimary,cuisineRegions),tag.originPrimary,...tag.foodTypes].filter(Boolean).flatMap(name=>[name,cuisineSynonyms[name]||''])].join(' '):'';}
 const typeOverrides={'G.O.A.T Haircuts':'Hair & beauty'};
 const searchIndex=new Map(dealOffers.map(o=>[o.id,{name:normalize(o.business),compact:normalize(o.business).replace(/\s/g,''),offer:normalize(o.offer),other:normalize([o.printedBusiness,cuisineSearch(o),o.category,o.cardScope,o.broadScope,...o.locations.map(l=>l.city)].join(' '))}]));
 for(const x of searchIndex.values())x.all=[x.name,x.compact,x.offer,x.other].join(' ');
@@ -1444,7 +1490,7 @@ const cuisineQueryCache=new Map();
 function distance(a,b){const d=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));for(let i=0;i<=a.length;i++)d[i][0]=i;for(let j=0;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[a.length][b.length];}
 function fuzzyCandidates(q){const compact=q.replace(/\s/g,'');if(compact.length<4)return [];const limit=compact.length<=6?1:2;return searchNames.map(({name,normalized:n})=>{return {name,score:Math.min(...[n.replace(/\s/g,''),n.replace(/\s/g,'').slice(0,compact.length),...n.split(' ').filter(w=>w.length>=4)].map(w=>distance(compact,w)))};}).filter(x=>x.score<=limit).sort((a,b)=>a.score-b.score||a.name.localeCompare(b.name));}
 function queryCuisines(q){if(!cuisineQueryCache.has(q))cuisineQueryCache.set(q,cuisineNames.filter(name=>normalize(name)===q||normalize(name).split(' ').includes(q)||(cuisineSynonyms[name]||'').split(' ').includes(q)));return cuisineQueryCache.get(q);}
-function cuisineMatch(o,q){return queryCuisines(q).includes(cuisineData.get(o.business)?.cuisines?.[0]);}
+function cuisineMatch(o,q){return cuisineV2.queryTargets(q).some(value=>cuisineV2.matchesCuisine(cuisineData.get(o.business),value,false,cuisineRegions));}
 function score(o,q){
  const x=searchIndex.get(o.id);if(cuisineMatch(o,q))return x.name.includes(q)?-2:-1;if(q==='free drink')return /^free[! ]/i.test(o.offer)&&matchesQuery(o,q)?0:/\b(?:drink|smoothie|shake|coffee|lemonade|soda|tea)\b[^!]*free/i.test(o.offer)&&!/(entree|burger|sandwich|chocolate|platter|shaved ice)/i.test(o.offer)?3:5;if(x.name===q)return 0;
  if(x.name.startsWith(q))return 1;if(x.name.split(' ').some(w=>w.startsWith(q)))return 1.5;
@@ -1470,13 +1516,13 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;
  const {base,hiddenMatches,corrected,visible:matched}=matchingOffers();let visible=matched;
  const unavailable=[],overBudget=[];if(userDriven)paneDismissed=false;if(userDriven)pruneSelection(visible);
  visible.sort((a,b)=>Number(temporary(a))-Number(temporary(b))||(q?score(a,q)-score(b,q):0)||(q&&city==='All'?cityRank(a)-cityRank(b):0)||a.business.localeCompare(b.business));
- const ranked=recommend(visible,{location:origin,cuisine:typeMode()?'All':cuisine,category,dateIdea:dateIdeas,mode:sortMode,includeUnavailable:nearby&&filter!=='available',values:valueData,geo:geoData,cuisines:Object.fromEntries(cuisineData),usage:Object.fromEntries(visible.map(o=>[o.id,state(o.id)])),today:contextDate()});
+ const ranked=recommend(visible,{location:origin,cuisine:'All',category,dateIdea:dateIdeas,mode:sortMode,includeUnavailable:nearby&&filter!=='available',values:valueData,geo:geoData,cuisines:Object.fromEntries(cuisineData),usage:Object.fromEntries(visible.map(o=>[o.id,state(o.id)])),today:contextDate()});
  const rankById=new Map(ranked.map(item=>[item.offer.id,item]));lastRanks=rankById;
  if(nearby||rankingActive&&filter==='available')visible=ranked.map(item=>item.offer);
  if(!nearby)visible.sort((a,b)=>(q&&!querySortOverride?score(a,q)-score(b,q):0)||(cuisine!=='All'&&!typeMode()?Number(cuisineData.get(a.business)?.cuisines[0]!==cuisine)-Number(cuisineData.get(b.business)?.cuisines[0]!==cuisine):0)||(sortMode==='fewest'?(left(a)??Infinity)-(left(b)??Infinity)||Number(state(b.id).used>0)-Number(state(a.id).used>0)||a.business.localeCompare(b.business):Number(notNow(a))-Number(notNow(b))||Number(!offerTiming(a,contextDate()).validToday)-Number(!offerTiming(b,contextDate()).validToday)));
  if(dateIdeas){unavailable.push(...visible.filter(o=>notNow(o)||!offerTiming(o,contextDate()).validToday));visible=visible.filter(o=>!unavailable.includes(o));}
  if(dateIdeas&&dateBudget!=='any'){overBudget.push(...visible.filter(o=>dateCost(rankById.get(o.id))>Number(dateBudget)));visible=visible.filter(o=>!overBudget.includes(o));}
- const candidates=ranked.filter(r=>visible.includes(r.offer)&&!r.notNow&&r.validToday&&!r.assumedDistance),close=candidates.filter(r=>r.miles!==null&&r.miles<=1.5),firstBand=Math.min(...candidates.map(r=>r.band));
+ const candidates=ranked.filter(r=>visible.includes(r.offer)&&!cuisineV2.secondaryCuisine(cuisineData.get(r.offer.business),cuisine,query)&&!r.notNow&&r.validToday&&!r.assumedDistance),close=candidates.filter(r=>r.miles!==null&&r.miles<=1.5),firstBand=Math.min(...candidates.map(r=>r.band));
  const topId=rankingActive&&['near','nearby'].includes(sortMode)&&(cuisine!=='All'||dateIdeas)&&origin&&!(dateIdeas&&dateBudget!=='any')?(close.length?close:candidates.filter(r=>r.band===firstBand)).sort((a,b)=>b.dealScore-a.dealScore)[0]?.offer.id:null;
  const counted=visible.filter(o=>filter!=='available'||left(o)!==0);updateCountLine(counted.length);announce($('result-count').textContent);
  setText($('date-status'),'');
@@ -1485,26 +1531,26 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;
  const rawMatch=base.some(o=>availability(o)&&q.split(' ').every(t=>normalize([o.business,o.offer,o.category,...o.locations.filter(l=>!permanentlyClosed(l)).map(l=>l.city)].join(' ')).includes(t)));
  const synonymCuisine=q&&!rawMatch&&visible.length?Object.keys(cuisineSynonyms).find(name=>q.split(' ').every(t=>normalize(cuisineSynonyms[name]).split(' ').includes(t))):null;
  $('correction').hidden=!corrected.length&&!synonymCuisine;setText($('correction'),synonymCuisine?'No "'+query+'" on the card. Showing '+(['boba','bubble tea','soda','sodas','drinks','tea','lemonade','smoothie','smoothies','juices'].includes(q)?'drinks: Soda & Drinks, Smoothies & Juice':synonymCuisine)+'.':corrected.length?'Showing results for '+corrected.join(', '):'');
- const fragment=document.createDocumentFragment(),open=visible.filter(o=>!closed(o)&&o.id!==topId),closedOffers=visible.filter(closed),groups=[0,1,2,3].map(i=>open.filter(o=>section(o)===i));
+ const secondaryLabel=o=>cuisineV2.secondaryCuisine(cuisineData.get(o.business),cuisine,query);const secondaryOffers=visible.filter(o=>secondaryLabel(o));const fragment=document.createDocumentFragment(),open=visible.filter(o=>!secondaryLabel(o)&&!closed(o)&&o.id!==topId),closedOffers=visible.filter(o=>!secondaryLabel(o)&&closed(o)),groups=[0,1,2,3].map(i=>open.filter(o=>section(o)===i));
  const sectionCounts=groups.map(group=>group.filter(o=>filter!=='available'||left(o)!==0).length);
 
  if(dateIdeas&&dateBudget!=='any')fragment.append(datePair(ranked.filter(r=>visible.includes(r.offer))));
  function appendGroup(group,index,target=fragment){if(!group.length)return;if(!rankingActive&&(!q||city!=='All')&&index!==4&&!(index===0&&city==='All'&&!q)){const h=node('h3','section-label',[city==='All'?'At a specific branch':'In '+city,'Any branch or area','Call first','Location unknown'][index]);if(index!==groups.findIndex(group=>group.length))h.append(node('span','count',sectionCounts[index]));target.append(h);if(index===1)target.append(node('p','section-subtitle','Honored across the area shown on each row.'));if(index===2)target.append(node('p','section-subtitle','Participation varies by branch. Ask at the counter before you order.'));}
  const merchants=new Map();for(const o of group){const band=sortMode==='fewest'?(left(o)??'unlimited'):!nearby&&dateIdeas?Number(notNow(o))*2+Number(!offerTiming(o,contextDate()).validToday):'';const key=band+'|'+o.business;if(!merchants.has(key))merchants.set(key,[]);merchants.get(key).push(o);}
- const cards=[...merchants.values()];const groupBand=items=>Math.min(...items.map(o=>rankById.get(o.id)?.band??4));const groupValue=items=>Math.max(...items.filter(o=>(rankById.get(o.id)?.band??4)===groupBand(items)).map(o=>rankById.get(o.id)?.dealScore??0));if(nearby)cards.sort((a,b)=>groupBand(a)-groupBand(b)||groupValue(b)-groupValue(a)||a[0].business.localeCompare(b[0].business));if(!nearby&&origin&&sortMode!=='fewest')cards.sort((a,b)=>(dateIdeas?Number(notNow(a[0]))-Number(notNow(b[0]))||Number(!offerTiming(a[0],contextDate()).validToday)-Number(!offerTiming(b[0],contextDate()).validToday):0)||Number(a.every(o=>rankById.get(o.id)?.assumedDistance))-Number(b.every(o=>rankById.get(o.id)?.assumedDistance)));
+ const atPin=o=>{const r=rankById.get(o.id);return r&&r.miles!==null&&r.miles<1/5280&&!r.assumedDistance;};const cards=[...merchants.values()];const groupBand=items=>Math.min(...items.map(o=>rankById.get(o.id)?.band??4));const groupValue=items=>Math.max(...items.filter(o=>(rankById.get(o.id)?.band??4)===groupBand(items)).map(o=>rankById.get(o.id)?.dealScore??0));if(nearby)cards.sort((a,b)=>groupBand(a)-groupBand(b)||Number(b.some(atPin))-Number(a.some(atPin))||groupValue(b)-groupValue(a)||a[0].business.localeCompare(b[0].business));if(!nearby&&origin&&sortMode!=='fewest')cards.sort((a,b)=>(dateIdeas?Number(notNow(a[0]))-Number(notNow(b[0]))||Number(!offerTiming(a[0],contextDate()).validToday)-Number(!offerTiming(b[0],contextDate()).validToday):0)||Number(a.every(o=>rankById.get(o.id)?.assumedDistance))-Number(b.every(o=>rankById.get(o.id)?.assumedDistance)));
  const usable=o=>{const r=rankById.get(o.id);return r&&!r.notNow&&r.validToday;},cardValue=items=>Math.max(...(items.some(usable)?items.filter(usable):items).map(o=>rankById.get(o.id)?.dealScore||0));
  if(sortMode==='value'&&!q){cards.sort((a,b)=>Number(!a.some(usable))-Number(!b.some(usable))||cardValue(b)-cardValue(a));if(category==='All'&&!dateIdeas&&index===0)diversifyCards(cards);}
  let weakHeading=false,assumedHeading=false,fewestHeading='',timingHeading='',distanceHeading=-1;for(const items of cards){
  const placeholder=node('div','render-pending');placeholder.dataset.key='pending:'+jobs.length;target.append(placeholder);const destination=target;
  jobs.push({size:items.length,placeholder,build:()=>{const target=document.createDocumentFragment();
- items.sort((a,b)=>(sortMode==='value'?Number(!usable(a))-Number(!usable(b)):0)||(q&&['boba','soda','smoothie','tea'].includes(q)?Number(!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice/i.test(a.offer))-Number(!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice/i.test(b.offer)):0)||(rankById.get(b.id)?.dealScore??0)-(rankById.get(a.id)?.dealScore??0));
+ items.sort((a,b)=>(nearby?Number(atPin(b))-Number(atPin(a)):0)||(sortMode==='value'?Number(!usable(a))-Number(!usable(b)):0)||(q&&['boba','soda','smoothie','tea'].includes(q)?Number(!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice/i.test(a.offer))-Number(!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice/i.test(b.offer)):0)||(rankById.get(b.id)?.dealScore??0)-(rankById.get(a.id)?.dealScore??0));
  const best=items[0],tier=q?score(best,q):0;
 
- if(nearby&&origin&&index!==5){const band=groupBand(items);if(band!==distanceHeading){const heading=node('h3','section-label distance-band',distanceBandLabels[band]);heading.dataset.band=band;if(distanceHeading===-1&&band!==4&&group.filter(o=>(rankById.get(o.id)?.band??4)===band).length>=2)heading.append(node('span','quiet',' · best value first'));if(band===4)heading.textContent=unconfirmedLabel();target.append(heading);distanceHeading=band;}}
+ if(nearby&&origin&&index!==5&&index!==10){const band=groupBand(items);if(band!==distanceHeading){const heading=node('h3','section-label distance-band',distanceBandLabels[band]);heading.dataset.band=band;if(distanceHeading===-1&&band!==4&&group.filter(o=>(rankById.get(o.id)?.band??4)===band).length>=2)heading.append(node('span','quiet',' · best value first'));if(band===4)heading.textContent=unconfirmedLabel();target.append(heading);distanceHeading=band;}}
  else if(sortMode==='fewest'){const n=left(best),label=n===null?'No limit':n===1?'1 use left':n===2?'2 uses left':'3+ uses left';if(label!==fewestHeading){target.append(node('h3','section-label',label));fewestHeading=label;}}
  else if(origin&&items.every(o=>rankById.get(o.id)?.assumedDistance)&&!assumedHeading){target.append(node('h3','section-label',unconfirmedLabel()));assumedHeading=true;}
  if(index!==4&&!nearby&&dateIdeas&&!offerTiming(best,contextDate()).validToday&&timingHeading!=='Not that day'){target.append(node('h3','section-label','Not that day'));timingHeading='Not that day';}
- const card=node('section','merchant'+(items[0].id===topId?' recommendation':''));card.dataset.key='merchant:'+index+':'+items[0].business+':'+(sortMode==='fewest'?(left(items[0])??'unlimited'):!nearby&&dateIdeas?Number(notNow(items[0]))*2+Number(!offerTiming(items[0],contextDate()).validToday):'');if(nearby){card.dataset.band=groupBand(items);card.dataset.value=groupValue(items);}if(items[0].id===topId)card.append(node('span','top-pick',topReason(rankById.get(items[0].id))));card.append(node('h3','',items[0].business));const tag=cuisineData.get(items[0].business);const subline=[...new Set([tag?.isFood?(cuisine!=='All'&&tag.cuisines[0]!==cuisine?'Related · ':'')+tag.cuisines[0]:category==='All'?typeGroup(items[0]):null,category==='All'&&tag?.isFood?shortCategory(items[0].category):null].filter(Boolean))].join(' · ');if(subline)card.append(node('p','merchant-cuisine',subline));const shared=null;if(shared)card.append(node('p','merchant-address',shared));
+ const card=node('section','merchant'+(items[0].id===topId?' recommendation':''));card.dataset.key='merchant:'+index+':'+items[0].business+':'+(sortMode==='fewest'?(left(items[0])??'unlimited'):!nearby&&dateIdeas?Number(notNow(items[0]))*2+Number(!offerTiming(items[0],contextDate()).validToday):'');if(nearby){card.dataset.band=groupBand(items);card.dataset.value=groupValue(items);}if(items[0].id===topId)card.append(node('span','top-pick',topReason(rankById.get(items[0].id))));card.append(node('h3','',items[0].business));const tag=cuisineData.get(items[0].business);const subline=[...new Set([tag?.isFood?(tag.originPrimary||tag.foodTypes[0]||''):category==='All'?typeGroup(items[0]):null,category==='All'&&tag?.isFood?shortCategory(items[0].category):null].filter(Boolean))].join(' · ');if(subline)card.append(node('p','merchant-cuisine',subline));const shared=null;if(shared)card.append(node('p','merchant-address',shared));
  for(const o of items){const row=node('div','deal'+(selected===o.id?' selected':'')+((closed(o)||left(o)===0)?' unavailable':'')+(flashId===o.id?' flash':''));row.dataset.id=o.id;if(nearby){row.dataset.band=rankById.get(o.id)?.band??4;row.dataset.miles=rankById.get(o.id)?.miles??'';}const b=node('button','deal-main');b.type='button';b.dataset.offerId=o.id;b.tabIndex=-1;b.setAttribute('aria-haspopup',desktop.matches?'false':'dialog');if(selected===o.id)b.setAttribute('aria-current','true');b.append(node('span','offer-text',displayTitle(o)));
  const rank=rankById.get(o.id);b.append(rowMeta(o,rank));
  if(desktop.matches&&precise.matches&&!matchMedia('(pointer:coarse)').matches)b.setAttribute('aria-keyshortcuts','ArrowRight');
@@ -1515,10 +1561,11 @@ function renderList(userDriven=false){if(leavingRows.size&&!userDriven)return;
  if(topId)appendGroup(visible.filter(o=>o.id===topId),5);
  const relevance=o=>drinks?0:q&&queryCuisines(q).length?(cuisineMatch(o,q)||/boba|bubble tea/i.test(q)&&/boba|bubble tea/i.test(o.offer)?0:1):0;
  const drinks=['boba','bubble tea','soda','sodas','drinks','tea','lemonade','smoothie','smoothies','juices'].includes(q);
- const secondary=o=>drinks&&!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice|boba|slush|refresher/i.test(o.offer)?2:relevance(o)||(!q&&cuisine!=='All'&&!typeMode()&&cuisineData.get(o.business)?.cuisines[0]!==cuisine?1:0);
+ const secondary=o=>cuisineV2.queryTargets(q).length||cuisine!=='All'?0:drinks&&!/smoothie|shake|soda|tea|coffee|lemonade|drink|juice|boba|slush|refresher/i.test(o.offer)?2:relevance(o)||(!q&&cuisine!=='All'&&!typeMode()&&cuisineData.get(o.business)?.cuisines[0]!==cuisine?1:0);
  const unconfirmed=o=>Boolean(q&&origin&&(rankById.get(o.id)?.assumedDistance||(rankById.get(o.id)?.band??4)===4));
  for(const tier of [0,1,2]){const group=open.filter(o=>secondary(o)===tier&&!unconfirmed(o));if(!group.length)continue;if(tier&&open.some(o=>secondary(o)!==tier))fragment.append(node('h3','section-label relevance-label',tier===2?'Other offers from these places':q?'Mentions "'+query+'" in the offer':'Related cuisines'));appendGroup(group,tier===0?0:6+tier);}
  const deferred=open.filter(unconfirmed);if(deferred.length)appendGroup(deferred,9);
+ for(const label of [...new Set(secondaryOffers.map(secondaryLabel))]){fragment.append(node('h3','section-label quiet','Also serves '+label+'-style dishes'));appendGroup(secondaryOffers.filter(o=>secondaryLabel(o)===label),10); }
  if(closedOffers.length){const toggle=node('button','text-button closed-toggle','Closed ('+closedOffers.length+')');toggle.prepend(glyph(closedExpanded?'chevron-down':'chevron-right'));toggle.setAttribute('aria-expanded',String(closedExpanded));toggle.setAttribute('aria-controls','closed-offers');toggle.onclick=()=>{closedExpanded=!closedExpanded;renderList();};fragment.append(toggle);const container=node('div');container.id='closed-offers';container.hidden=!closedExpanded;appendGroup(closedOffers,4,container);fragment.append(container);}
  if(unavailable.length){const toggle=node('button','text-button closed-toggle','Not available '+dateDay+' ('+unavailable.length+')');toggle.prepend(glyph(unavailableExpanded?'chevron-down':'chevron-right'));toggle.setAttribute('aria-expanded',String(unavailableExpanded));toggle.setAttribute('aria-controls','unavailable-offers');toggle.onclick=()=>{unavailableExpanded=!unavailableExpanded;renderList();};fragment.append(toggle);const container=node('div');container.id='unavailable-offers';container.hidden=!unavailableExpanded;appendGroup(unavailable,4,container);fragment.append(container);}
  if(overBudget.length){const group=node('details','budget-over');group.dataset.key='over-budget';const summary=node('summary','text-button','Over $'+dateBudget+' ('+overBudget.length+')');summary.prepend(glyph('chevron-right'));group.append(summary);fragment.append(group);appendGroup(overBudget,8,group);}
@@ -1572,7 +1619,7 @@ $('list-toast').addEventListener('pointerenter',()=>{toastHovered=true;pauseToas
 $('list-toast').addEventListener('pointerleave',()=>{toastHovered=false;resumeToast();});
 $('list-toast').addEventListener('focusin',pauseToast);
 $('list-toast').addEventListener('focusout',()=>setTimeout(resumeToast,0));
-new ResizeObserver(toastSpace).observe($('list-toast'));
+deferredResizeObserver(toastSpace).observe($('list-toast'));
 
 function hideDetail(){paintDepth(utility==='about'&&!desktop.matches?1:0);detailOpenedByUser=false;feedback=null;selectRow(null);stopSheet($('detail'));$('detail').hidden=true;$('detail').style.transform='';$('detail').style.opacity='';applyModal();}
 function rowAt(index){const rows=[...$('results').querySelectorAll('.deal-main')].filter(el=>!el.closest('[hidden]'));return rows[Math.max(0,Math.min(index,rows.length-1))]||$('results');}
@@ -1692,8 +1739,8 @@ function measureToolbar(){
  if(document.documentElement.style.getPropertyValue('--bar-height')!==value)document.documentElement.style.setProperty('--bar-height',value);
  requestAnimationFrame(updateShowInList);
 }
-new ResizeObserver(measureToolbar).observe($('toolbar'));
-new ResizeObserver(()=>{layoutPanes();measureToolbar();}).observe($('header'));
+deferredResizeObserver(measureToolbar).observe($('toolbar'));
+deferredResizeObserver(()=>{layoutPanes();measureToolbar();}).observe($('header'));
 window.addEventListener('resize',()=>{if(!desktop.matches&&!detailOpenedByUser&&selected)hideDetail();layoutPanes();});
 window.addEventListener('orientationchange',layoutPanes);
 layoutPanes();
@@ -1719,7 +1766,7 @@ async function connect(){
    showAccount(){if(utility&&utility!=='about')closeUtility();openUtility('about');document.querySelector('.account')?.scrollIntoView({block:'start'});},
    replay(action){if(action.kind==='use')markUse(action.id,true);else if(action.kind==='note')save(action.id,{...state(action.id),note:action.note});},
    closeAccount:closeUtility,
-   onForgetDevice(){locationPrefs={};gpsOrigin=null;city='All';category='All';cuisine='All';recentCities=[];cityChosenOnce=false;resetNearbySort();updateFilters();renderList(true);},
+   onForgetDevice(){stopLocationWatch();locationPrefs={};gpsOrigin=null;city='All';category='All';cuisine='All';recentCities=[];cityChosenOnce=false;resetNearbySort();updateFilters();renderList(true);},
    onSettings:receiveLocationSettings,
    getLocationSettings:deviceLocationSettings,
    status
@@ -1781,7 +1828,7 @@ function enhanceDetail(o){
  for(const l of sorted){
   const block=node('div','location');block.dataset.maps=l.mapsUrl||'';
   const heading=node('div','branch-heading');heading.append(node('strong','',l.city||'Location unknown'));
-  if(Number.isFinite(branchDistance(l)))heading.append(node('span','quiet',branchDistance(l).toFixed(1)+' mi'));
+  if(Number.isFinite(branchDistance(l)))heading.append(node('span','quiet',formatDistance(branchDistance(l))));
   block.append(heading);
   if(l===nearest)block.append(node('p','quiet nearest-caption','Nearest to '+(gpsOrigin?'you':origin.city)));
   const link=mapsLink(l,o);
@@ -1836,7 +1883,7 @@ function renderCardProgress(){
  const open=dealOffers.filter(o=>!closed(o)).length,shut=dealOffers.filter(closed).length;root.append(node('p','quiet',plural(data.offers.length,'offer')+' on the card. '+shut+' '+(shut===1?'is':'are')+' at closed branches and '+CARD_INFO_IDS.size+' '+(CARD_INFO_IDS.size===1?'is':'are')+" card information, so they aren't counted."));
 }
 const observedMeta=new WeakSet();
-const metaObserver=new ResizeObserver(entries=>{
+const metaObserver=deferredResizeObserver(entries=>{
  const changes=[];
  for(const {target} of entries){let previous=null;for(const seg of target.children){const top=seg.offsetTop;changes.push([seg,previous===null||top>previous]);previous=top;}}
  for(const [seg,starts] of changes)setClass(seg,'line-start',starts);
@@ -1849,7 +1896,7 @@ function updateCardSummary(){setText($('card-summary'),data.card.name+' · '+day
 function rowMeta(o,rank=lastRanks.get(o.id)){
  const meta=node('div','deal-meta'),parts=[];
  if(rank?.estimated)parts.push('Saves about $'+Math.round(rank.est));
- const place=rank?.miles!==null&&rank?.miles!==undefined&&!rank.assumedDistance?rank.miles.toFixed(1)+' mi':locationSummary(o);
+ const place=rank?.miles!==null&&rank?.miles!==undefined&&!rank.assumedDistance?formatDistance(rank.miles):locationSummary(o);
  if(place&&place!=='Every location'&&!(city!=='All'&&place===city))parts.push(place);
  const remaining=left(o),used=state(o.id).used;
  const use=closed(o)?'Closed':remaining===0?'Used up':used?'Used '+used+' of '+o.limit:o.limit>1?(remaining===1?'Last use':plural(remaining,'use')):null;
@@ -1947,11 +1994,11 @@ function datePair(ranks){
  const day=contextDate().toLocaleDateString('en-US',{weekday:'long'});root.append(node('h3','','Your '+day+' date'));
  if(!pairs.length){const cheapest=[...foods].sort((a,b)=>dateCost(a)-dateCost(b))[0];if(cheapest&&dateCost(cheapest)<=budget)root.append(node('p','pair-total','About $'+dateCost(cheapest)+' for two'),node('p','quiet','Take a walk, then '+cheapest.offer.business));else{root.append(node('p','quiet','No pair under $'+budget+' on '+day));const more=node('button','text-button','Try Under $40');more.onclick=()=>{dateBudget='40';updateMenus();renderList(true);};root.append(more);}return root;}
  let chosen=options.find(p=>p.activity.offer.id===pairChoice.activity&&p.food.offer.id===pairChoice.food)||options[0];pairChoice={activity:chosen.activity.offer.id,food:chosen.food.offer.id};
- root.dataset.total=chosen.total;root.dataset.distance=chosen.distance;const total=node('p','pair-total','About $'+chosen.total+' for two');root.append(total,node('p','quiet pair-separation',Number.isFinite(chosen.distance)?chosen.distance.toFixed(1)+' mi apart':'Distance between branches unavailable'));
+ root.dataset.total=chosen.total;root.dataset.distance=chosen.distance;const total=node('p','pair-total','About $'+chosen.total+' for two');root.append(total,node('p','quiet pair-separation',Number.isFinite(chosen.distance)?formatDistance(chosen.distance)+' apart':'Distance between branches unavailable'));
  for(const kind of ['activity','food']){
   const line=node('div','pair-member');line.dataset.kind=kind;
   const draw=()=>{const item=chosen[kind],other=kind==='activity'?'food':'activity',alternatives=options.filter(p=>p[other].offer.id===chosen[other].offer.id&&p[kind].offer.business!==item.offer.business);
-   const description=node('button','pair-description');description.append(node('strong','',item.offer.business),node('span','quiet pair-offer',displayTitle(item.offer)),node('span','quiet pair-cost',(dateCost(item)===0?'Free':'About $'+dateCost(item))+(item.miles!==null?' · '+item.miles.toFixed(1)+' mi':'')));description.onclick=()=>openDetail(item.offer.id,description);
+   const description=node('button','pair-description');description.append(node('strong','',item.offer.business),node('span','quiet pair-offer',displayTitle(item.offer)),node('span','quiet pair-cost',(dateCost(item)===0?'Free':'About $'+dateCost(item))+(item.miles!==null&&!item.assumedDistance?' · '+formatDistance(item.miles):'')));description.onclick=()=>openDetail(item.offer.id,description);
    const swap=node('button','text-button','Swap');swap.setAttribute('aria-label','Swap '+kind);swap.disabled=!alternatives.length;swap.setAttribute('aria-disabled',String(swap.disabled));
    swap.onclick=()=>{const current=options.indexOf(chosen),next=options.slice(current+1).concat(options.slice(0,current+1)).find(p=>p[other].offer.id===chosen[other].offer.id&&p[kind].offer.business!==item.offer.business);pairChoice={activity:next.activity.offer.id,food:next.food.offer.id};const fresh=datePair(ranks);document.querySelector('.date-pair')?.replaceWith(fresh);if(!reduceMotion.matches)fresh.querySelector('[data-kind="'+kind+'"]').animate([{opacity:0},{opacity:1}],{duration:150});};line.replaceChildren(description,swap);
   };line.redraw=draw;draw();root.append(line);
@@ -1959,12 +2006,91 @@ function datePair(ranks){
  return root;
 }
 
+/** Device-only policy shared by both clients. No network or account access. */
+const REFRESH_AFTER = 5 * 60 * 1000;
+function usableFix(fix) {
+  return !!fix && Number.isFinite(fix.lat) && Math.abs(fix.lat) <= 90 &&
+    Number.isFinite(fix.lng) && Math.abs(fix.lng) <= 180 &&
+    Number.isFinite(fix.accuracy) && fix.accuracy >= 0 && fix.accuracy <= 5000;
+}
+function movedMeters(a, b) {
+  const rad = x => x * Math.PI / 180;
+  const h = Math.sin(rad(b.lat-a.lat)/2)**2 + Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(rad(b.lng-a.lng)/2)**2;
+  return 6371008.8 * 2 * Math.asin(Math.sqrt(Math.min(1, h)));
+}
+function refreshNeeded(previous, next, now) {
+  return !usableFix(previous) || now - previous.fixedAt > REFRESH_AFTER ||
+    now < previous.fixedAt || movedMeters(previous, next) > 200;
+}
+function precisionLabel(fix, detail = false, cached = false) {
+  if (!usableFix(fix)) return '';
+  if (fix.accuracy > 1000) return `Approximate location (about ${(fix.accuracy / 1609.344).toFixed(1)} mi)`;
+  return (cached ? 'Near your last location' : 'Near you') + (detail ? ` · ±${Math.round(fix.accuracy)} m` : '');
+}
+function formatDistance(miles) {
+  if (miles === null || !Number.isFinite(miles) || miles < 0) return '';
+  if (miles < 0.1) return `${Math.round(miles * 5280 / 50) * 50} ft`;
+  return `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi`;
+}
+/**
+ * Initial high-accuracy fix (15s), then at most 20s of refinement. Best means
+ * smallest accuracy radius within this acquisition, not a stale stationary fix.
+ * A fresh foreground sample only refines if movement exceeds 200m or age >5min.
+ * Cancellation settles the promise and ignores even late browser callbacks.
+ */
+function requestPreciseLocation(geo, {now = Date.now, previous, silent = false, signal, onFix = () => {}} = {}) {
+  return new Promise((resolve, reject) => {
+    let best, watch, timer, done = false;
+    const finish = (error) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (watch !== undefined) geo?.clearWatch(watch);
+      signal?.removeEventListener('abort', cancel);
+      if (error) reject(error); else resolve(best);
+    };
+    const cancel = () => finish(new Error('Location request cancelled'));
+    const fixFrom = position => ({lat: position.coords.latitude, lng: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+      fixedAt: Number.isFinite(position.timestamp) && position.timestamp <= now() ? position.timestamp : now()});
+    const consider = position => {
+      if (done) return;
+      const fix = fixFrom(position);
+      if (usableFix(fix) && (!best || fix.accuracy < best.accuracy)) {
+        best = fix;
+        onFix(fix);
+      }
+      if (best?.accuracy <= 50) finish();
+    };
+    if (signal?.aborted) { cancel(); return; }
+    signal?.addEventListener('abort', cancel, {once: true});
+    if (!geo) { finish(new Error('Geolocation unavailable')); return; }
+    const options = {enableHighAccuracy: true, maximumAge: 0, timeout: 15000};
+    geo.getCurrentPosition(position => {
+      if (done) return;
+      const sample = fixFrom(position);
+      if (silent && usableFix(sample) && !refreshNeeded(previous, sample, now())) {
+        best = previous;
+        finish();
+        return;
+      }
+      consider(position);
+      if (done) return;
+      timer = setTimeout(() => finish(), 20000);
+      if (!geo.watchPosition) { finish(); return; }
+      watch = geo.watchPosition(consider, error => finish(best ? undefined : error), options);
+      // Also handles synchronous mocks and implementations that call back immediately.
+      if (done) geo.clearWatch(watch);
+    }, error => finish(error), options);
+  });
+}
+
 // Device coordinates never enter the account adapter or any server payload.
 const locationKey = 'deals-location-v1';
-const fixLifetime = 24 * 60 * 60 * 1000, refreshInterval = 5 * 60 * 1000;
+const fixLifetime = 24 * 60 * 60 * 1000;
 let locationPrefs = {}, locationPermission = 'prompt', permissionStatus = null;
 let locationChecking = true, locationBusy = false, locationDismissed = false, locationLive = false, otherDeviceOptIn = false;
-let locationError = '', locationCheck = null, locationWatch = null;
+let locationError = '', locationCheck = null, locationAcquisition = null, locationDetail = false;
 function readLocationPrefs() {
  try { return JSON.parse(localStorage.getItem(locationKey)) || {}; } catch { return {}; }
 }
@@ -1973,11 +2099,11 @@ function saveLocationPrefs() {
 }
 function freshFix() {
  const fix=locationPrefs.fix,age=Date.now()-fix?.timestamp;
- return fix && Number.isFinite(fix.lat) && Math.abs(fix.lat)<=90 && Number.isFinite(fix.lng) && Math.abs(fix.lng)<=180 && age>=0 && age<fixLifetime ? fix : null;
+ return usableFix(fix) && age>=0 && age<fixLifetime ? fix : null;
 }
 function locationOrigin() {
  gpsOrigin=freshFix();
- return gpsOrigin || cityCenter(dealOffers,city==='All'?locationPrefs.homeCity:city,geoData);
+ return gpsOrigin || cityCenter(dealOffers,city==='All'?locationPrefs.homeCity:city,geoData,data.cities||[]);
 }
 function resetNearbySort() { sortMode=locationOrigin()?'nearby':'value';explicitSort=null;querySortOverride=false; }
 function deviceLocationSettings() {
@@ -2013,8 +2139,9 @@ function locationHelp() {
  return 'In Chrome, Edge or Firefox, open the lock or site controls icon beside the address > Location > Allow. If location is blocked by your computer, also allow this browser in system Location Services.';
 }
 function renderLocationStatus() {
- const fix=freshFix(),origin=locationOrigin(),age=fix?Math.max(0,Math.floor((Date.now()-fix.timestamp)/60000)):0;
- setText($('location-reference'),fix?(locationLive?'Near you · updated '+(age<1?'just now':age+' min ago'):'Near your last location'):origin?'Near '+origin.city:'Choose a location for nearby deals');
+ const fix=freshFix(),origin=locationOrigin();
+ setText($('location-reference'),fix?precisionLabel(fix,locationDetail,!locationLive):origin?'Near '+origin.city:'Choose a location for nearby deals');
+ $('location-reference').disabled=!fix;setAttr($('location-reference'),'aria-expanded',String(Boolean(fix)&&locationDetail));
  setAttr($('location-reference'),'data-source',fix?(locationLive?'live':'cached'):origin?'city':'none');
  const denied=locationPermission==='denied',unsupported=!navigator.geolocation||!window.isSecureContext;
  setText($('location-title'),denied?'Location is off':'See the deals closest to you');
@@ -2051,20 +2178,12 @@ function dismissLocationAsk(preserveList=false) {
  animateClose(sheet,()=>{if(!preserveList)renderLocationStatus();measureLocationAsk();toastRemaining=6500;resumeToast();if(hadFocus&&!preserveList)(locationReturnFocus?.isConnected&&locationReturnFocus!==document.body?locationReturnFocus:$('city-button')).focus({preventScroll:true});});
 }
 function stopLocationWatch() {
- if(locationWatch!==null){navigator.geolocation?.clearWatch(locationWatch);locationWatch=null;}
+ locationAcquisition?.abort();locationAcquisition=null;
 }
-function startLocationWatch() {
- if(locationWatch!==null||document.hidden||!navigator.geolocation?.watchPosition)return;
- // Watch only while visible: movement updates the reference without another prompt.
- locationWatch=navigator.geolocation.watchPosition(position=>{
-  const last=freshFix(),next={lat:position.coords.latitude,lng:position.coords.longitude};
-  if(!last||milesBetween(last,next)>.03||Date.now()-last.timestamp>refreshInterval)acceptLocation(position);
- },error=>{if(error.code===1){stopLocationWatch();locationPermission='denied';locationLive=false;locationDismissed=false;showLocationAsk();renderLocationStatus();}},{enableHighAccuracy:false,maximumAge:refreshInterval});
-}
-function acceptLocation(position) {
- const fix={lat:position.coords.latitude,lng:position.coords.longitude,timestamp:Date.now()};
+function acceptLocation(point) {
+ const fix={...point,timestamp:point.fixedAt};
  if(!Number.isFinite(fix.lat)||!Number.isFinite(fix.lng))return;
- locationBusy=false;locationError='';locationPermission='granted';locationLive=true;
+ locationError='';locationPermission='granted';locationLive=true;
  const firstGrant=!locationPrefs.optIn;
  locationPrefs.fix=fix;locationPrefs.optIn=true;gpsOrigin=fix;saveLocationPrefs();
  if(firstGrant)window.DealsWeb?.saveSettings({location_opt_in:true});
@@ -2074,37 +2193,40 @@ function acceptLocation(position) {
   setText($('location-tip'),/CriOS/.test(navigator.userAgent)?'To skip this prompt in the future: Settings > Apps > Chrome > Location > While Using.':'To skip this prompt in the future: Settings > Apps > Safari > Location > Allow.');
   $('location-tip').hidden=false;locationPrefs.iphoneTipShown=true;saveLocationPrefs();
  }
- updateFilters();renderList(true);updateDetail();startLocationWatch();
+ updateFilters();renderList(true);updateDetail();
 }
-function requestLocation() {
+function requestLocation(silent=false) {
  if(locationBusy)return;
  if(!navigator.geolocation||!window.isSecureContext){locationError=locationHelp();showLocationAsk();renderLocationStatus();return;}
  locationBusy=true;locationError='';renderLocationStatus();
- // Called synchronously by Allow location; Safari requires this user gesture.
- navigator.geolocation.getCurrentPosition(acceptLocation,error=>{
-  locationBusy=false;locationLive=false;
+ locationAcquisition=new AbortController();
+ const signal=locationAcquisition.signal;
+ // Synchronous native request preserves the Allow location gesture on Safari.
+ return requestPreciseLocation(navigator.geolocation,{previous:freshFix(),silent,signal,onFix:acceptLocation})
+ .then(fix=>{if(!signal.aborted&&!fix){locationLive=false;locationError='Location is too approximate. Try again or choose a city.';}})
+ .catch(error=>{
+  if(signal.aborted)return;
+  locationLive=false;
   if(error.code===1){locationPermission='denied';locationError='';locationDismissed=false;}
-  else locationError=error.code===3?'Location took too long. Try again or choose a city.':'Couldn’t find your location. Try again or choose a city.';
-  showLocationAsk();renderLocationStatus();updateFilters();renderList(true);
- },{timeout:10000,maximumAge:0,enableHighAccuracy:false});
+  else locationError='Could not find your location. Try again or choose a city.';
+  showLocationAsk();
+ }).finally(()=>{locationBusy=false;renderLocationStatus();updateFilters();renderList(true);});
 }
 async function checkLocationPermission(launch=false) {
  if(locationCheck)return locationCheck;
  locationCheck=(async()=>{
-  let state='prompt',supported=false;
+  let state='prompt';
   try {
    const status=await navigator.permissions.query({name:'geolocation'});
-   supported=true;state=status.state;
+   state=status.state;
    if(permissionStatus!==status){if(permissionStatus)permissionStatus.onchange=null;permissionStatus=status;status.onchange=()=>void checkLocationPermission();}
   }catch { state=freshFix()?'granted':'prompt'; }
   if(locationPermission==='granted'&&state!=='granted')locationDismissed=false;
   locationPermission=state;
-  const fix=freshFix();
   if(state==='granted'){
    dismissLocationAsk();
    // Without Permissions API a fresh cached fix is useful, but not proof of live GPS.
-   if(launch||!fix||Date.now()-fix.timestamp>refreshInterval)requestLocation();
-   if(supported)startLocationWatch();
+   requestLocation(!launch);
   }else{
    stopLocationWatch();locationLive=false;
    if(launch)locationDismissed=false;
@@ -2115,7 +2237,7 @@ async function checkLocationPermission(launch=false) {
  try{await locationCheck;}finally{locationCheck=null;locationChecking=false;renderLocationStatus();}
 }
 function setupLocation() {
- new ResizeObserver(measureLocationAsk).observe($('location-sheet'));new ResizeObserver(measureLocationAsk).observe($('list-pane'));new MutationObserver(measureLocationAsk).observe($('location-sheet'),{attributes:true,attributeFilter:['hidden']});
+ deferredResizeObserver(measureLocationAsk).observe($('location-sheet'));deferredResizeObserver(measureLocationAsk).observe($('list-pane'));new MutationObserver(measureLocationAsk).observe($('location-sheet'),{attributes:true,attributeFilter:['hidden']});
  locationPrefs=readLocationPrefs();
  if(!locationPrefs.homeCity&&city!=='All'){locationPrefs.homeCity=city;saveLocationPrefs();}
  if(city==='All'&&cities.includes(locationPrefs.homeCity))city=locationPrefs.homeCity;
@@ -2125,6 +2247,7 @@ function setupLocation() {
  const message=node('p','quiet');message.id='gps-status';message.setAttribute('role','status');message.hidden=true;button.after(message);
  button.onclick=()=>{locationDismissed=false;requestLocation();};
  $('location-allow').onclick=()=>{if(locationPermission==='denied'){locationDismissed=false;void checkLocationPermission();}else requestLocation();};
+ $('location-reference').onclick=()=>{locationDetail=!locationDetail;renderLocationStatus();};
  $('location-later').onclick=dismissLocationAsk;
  $('location-city').onclick=() => {dismissLocationAsk();openUtility('city');};
  $('location-card-allow').onclick=()=>{locationDismissed=false;showLocationAsk();if(locationPermission!=='denied')requestLocation();else void checkLocationPermission();};
@@ -2147,7 +2270,7 @@ let catalogVersion = initialCatalog.version;
 window.DealsCatalog.subscribe(next => {
   if (next.version === catalogVersion) return;
   catalogVersion = next.version;
-  data = next.data;
+  data = next.data; cuisineRegions = next.cuisineRegions;
   dealOffers = data.offers.filter(o => !CARD_INFO_IDS.has(o.id));
   cuisineData = new Map(next.cuisines.map(item => [item.business,item]));
   valueData = next.values; geoData = next.geo;
@@ -2164,7 +2287,7 @@ window.DealsCatalog.subscribe(next => {
   searchNames = [...new Set(dealOffers.map(o=>o.business))].map(name=>({name,normalized:normalize(name)}));
   if (city !== 'All' && !cities.includes(city)) city='All';
   if (category !== 'All' && !data.categoryOrder.includes(category)) category='All';
-  if (cuisine !== 'All' && !cuisineNames.includes(cuisine) && !typeNames().includes(cuisine)) cuisine='All';
+  if (cuisine !== 'All' && !cuisineNames.includes(cuisine) && !(cuisine in cuisineV2.REGIONS) && !typeNames().includes(cuisine)) cuisine='All';
   // Reconcile categories only when their membership/order changes.
   const names=['All',...data.categoryOrder];
   if (JSON.stringify([...$('categories').querySelectorAll('[data-value]')].map(b=>b.dataset.value)) !== JSON.stringify(names)) {

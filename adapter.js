@@ -14,6 +14,7 @@ window.DealsWeb = (() => {
   let welcome='', onboarding=false, newAccount=false, mergePending=false, mergeReceipt=null;
   let signOutBusy=false, deleteConfirm=false, deleteBusy=false, retryNotBefore=0, retryReason='';
   const deletedAccounts=new Set();
+  let invites;
   const offers=new Map();
   const setText=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
   const plural=(count,word)=>count+' '+word+(count===1?'':'s');
@@ -105,7 +106,8 @@ window.DealsWeb = (() => {
   function account() {
     if (!hooks) return;
     hooks.onLoading(initializing || loadingUsage);
-    const authenticating=signinRequested&&!user,focused=authenticating||mergePending||Boolean(welcome)||deleteConfirm||Boolean(catchupStep);
+    const authenticating=signinRequested&&!user,focused=authenticating||mergePending||Boolean(welcome)||deleteConfirm||Boolean(catchupStep)||Boolean(invites?.isOpen());
+    invites?.visibility(focused);
     // Keep AUTH.md's complete new-account receipt in the live status below.
     // A neutral sheet title avoids announcing the same greeting twice.
     setText('about-title',authenticating&&authStep==='code'?'Check your email':welcome?(newAccount?'Your card':'Welcome back'):focused?'Account':'Your card');$('about-title').hidden=false;
@@ -251,7 +253,7 @@ window.DealsWeb = (() => {
     }
     clearTimeout(syncRetryTimer);clearTimeout(settingsRetryTimer);hooks.onReset();
     if (channel) { void client.removeChannel(channel); channel = null; }
-    user = nextUser; settingsFlushing=false;settingsReady=false;const settingsCache=user?read(settingsKey()):{};settings=settingsCache.settings||{};settingsPending=settingsCache.pending||{};hooks.onSettings(user?{...settings,...settingsPending}:null);flushing = false; inFlight.clear(); live = false; problem = '';
+    user = nextUser; void invites?.session(client, user); settingsFlushing=false;settingsReady=false;const settingsCache=user?read(settingsKey()):{};settings=settingsCache.settings||{};settingsPending=settingsCache.pending||{};hooks.onSettings(user?{...settings,...settingsPending}:null);flushing = false; inFlight.clear(); live = false; problem = '';
     const cached = user ? read(accountKey()) : {};
     rows = cached.rows || {}; outbox = cached.outbox || {};mergeReceipt=cached.mergeReceipt||null;retryNotBefore=cached.retryNotBefore||0;retryReason=cached.retryReason||'';
     if(user){
@@ -329,7 +331,7 @@ window.DealsWeb = (() => {
       cooldown();renderAuth();$('signin-code').focus();
     }catch(error){
       if(authMode==='signin'&&(error.code==='otp_disabled'||error.code==='user_not_found'||/signups? (?:not allowed|disabled)|user not found/i.test(error.message||''))){
-        authError('');setText('signin-status','This app is invite-only. Ask Dan to add '+email+'.');
+        authError('');setText('signin-status','This app is invite-only. Ask Dan to add you.');
       }else authError(authErrorMessage(error,false));
     }finally{signInBusy=false;account();}
   }
@@ -548,6 +550,7 @@ window.DealsWeb = (() => {
     updateCatalog(window.DealsCatalog.current.data.offers);
     hooks = callbacks;const indicator=document.createElement('button');indicator.type='button';indicator.onclick=showAccount;indicator.id='header-sync';indicator.className='header-sync text-button';indicator.hidden=true;$('about-button').after(indicator);localUsage = read(localKey);
     if (!configured) rows = {...localUsage};
+    invites ||= window.createDealsInvites(account);
     authMode='signin';$('signin-email').value=knownEmail();
     $('signin-form').onsubmit=sendCode;$('code-form').onsubmit=verifyCode;
     $('signin-code').oninput=()=>{paintCode();authError('');if($('signin-code').value.length===6)void verifyCode();};
