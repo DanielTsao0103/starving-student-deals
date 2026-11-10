@@ -1,0 +1,36 @@
+name: Health
+# This check lives in the public site repository on purpose. Actions minutes are free
+# and unlimited for public repositories; the private source repository gets 2,000 a
+# month, and when those run out GitHub starts no job at all. Nothing here is secret:
+# the site address and the publishable key are already in the page the site serves.
+on:
+  schedule:
+    - cron: "17 15 * * *"
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: health
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # Only for the last step, which keeps this schedule switched on.
+      actions: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github
+      - name: Check the live site and read the catalog (keeps the database awake)
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: python3 .github/health/check.py
+      - name: Keep this schedule switched on
+        # GitHub switches off schedules in a public repository after 60 days without a
+        # commit. Enabling the workflow again (it is already on) restarts that clock.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/health.yml/enable"
